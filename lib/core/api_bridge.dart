@@ -1,6 +1,9 @@
 import 'package:election_mantra/api/models/age_group_stats.dart';
+import 'package:election_mantra/api/models/filter_model.dart';
 import 'package:election_mantra/api/models/party_census_stats.dart';
 import 'package:election_mantra/api/models/political_groups.dart';
+import 'package:election_mantra/api/models/religion.dart';
+import 'package:election_mantra/api/models/religion_group_stats.dart';
 import 'package:election_mantra/api/models/voter.dart';
 import 'package:election_mantra/api/models/voters_census_stats.dart';
 import 'package:get_it/get_it.dart';
@@ -12,7 +15,6 @@ class ApiBridge {
   final UserRepository _userRepository = GetIt.I<UserRepository>();
 
   ApiBridge();
-
 
   /// Send OTP to the specified phone number.
   Future<void> sendOtp(String phoneNumber) {
@@ -44,22 +46,41 @@ class ApiBridge {
     return _userRepository.getUserProfile();
   }
 
-  
   Future<List<VoterDetails>> getVoters({
     int? boothId,
     int? wardId,
     int? constituencyId,
-  }){
+    int? limit,
+  }) {
     return _userRepository.getVoters(
       boothId: boothId,
       constituencyId: constituencyId,
-      wardId: wardId
+      wardId: wardId,
+      limit:limit
     );
   }
 
-    Future<List<PoliticalGroups>> getPoliticalGroups() async {
-      return _userRepository.getPoliticalGroups();
-    }
+  Future<List<VoterDetails>> getVotersByFilter({
+    int? boothId,
+    int? wardId,
+    int? constituencyId,
+    required FilterModel filter,
+  }) {
+    return _userRepository.getVotersByFilter(
+      boothId: boothId,
+      wardId: wardId,
+      constituencyId: constituencyId,
+      filter: filter,
+    );
+  }
+
+  Future<List<PoliticalGroups>> getPoliticalGroups() async {
+    return _userRepository.getPoliticalGroups();
+  }
+
+  Future<List<Religion>> getReligions() async {
+    return _userRepository.getReligions();
+  }
 
   Future<Map<String, PartyCensusStats>> getPartySupportPercentage({
     int? boothId,
@@ -69,7 +90,7 @@ class ApiBridge {
     return _userRepository.getPartySupportPercentage(
       boothId: boothId,
       constituencyId: constituencyId,
-      wardId: wardId
+      wardId: wardId,
     );
   }
 
@@ -77,15 +98,15 @@ class ApiBridge {
     int? boothId,
     int? wardId,
     int? constituencyId,
-  }){
-    return  _userRepository.getVoterCensusStats(
+  }) {
+    return _userRepository.getVoterCensusStats(
       boothId: boothId,
       constituencyId: constituencyId,
-      wardId: wardId
+      wardId: wardId,
     );
   }
 
-    Future<List<AgeGroupStats>> getAgeGroupStats({
+  Future<List<AgeGroupStats>> getAgeGroupStats({
     int? boothId,
     int? wardId,
     int? constituencyId,
@@ -93,7 +114,19 @@ class ApiBridge {
     return _userRepository.getAgeGroupStats(
       boothId: boothId,
       constituencyId: constituencyId,
-      wardId: wardId
+      wardId: wardId,
+    );
+  }
+
+  Future<List<ReligionGroupStats>> getReligionGroupStats({
+    int? boothId,
+    int? wardId,
+    int? constituencyId,
+  }) async {
+    return _userRepository.getReligionGroupStats(
+      boothId: boothId,
+      constituencyId: constituencyId,
+      wardId: wardId,
     );
   }
 }

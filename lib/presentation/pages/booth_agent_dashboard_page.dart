@@ -1,14 +1,20 @@
+import 'package:election_mantra/core/util.dart';
 import 'package:election_mantra/presentation/blocs/age_group_stats/age_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/login/login_bloc.dart';
 import 'package:election_mantra/presentation/blocs/party_list/party_list_bloc.dart';
 import 'package:election_mantra/presentation/blocs/party_stats/party_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/religion_group_stats/religion_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_list/voters_list_bloc.dart';
+import 'package:election_mantra/presentation/blocs/voters_recent/voters_recent_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_stats/voters_stats_bloc.dart';
+import 'package:election_mantra/presentation/cubit/cubit/filter_cubit.dart';
 import 'package:election_mantra/presentation/widgets/age_group_stats_widget.dart';
 import 'package:election_mantra/presentation/widgets/age_wise_section.dart';
 import 'package:election_mantra/presentation/widgets/header.dart';
-import 'package:election_mantra/presentation/widgets/house_wise_section.dart';
 import 'package:election_mantra/presentation/widgets/party_census_stats_widget.dart';
+import 'package:election_mantra/presentation/widgets/religion_wise_section.dart';
+import 'package:election_mantra/presentation/widgets/side_menu.dart';
+import 'package:election_mantra/presentation/widgets/voter_card.dart';
 import 'package:election_mantra/presentation/widgets/voters_census_stats_widget.dart';
 import 'package:election_mantra/presentation/widgets/voters_list_widget.dart';
 import 'package:flutter/material.dart';
@@ -41,6 +47,7 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: Header(),
+      drawer: SideMenu(),
       body: BlocListener<LoginBloc, LoginState>(
         listener: (context, state) {
           if (state is LoginSuccessState) {
@@ -54,15 +61,22 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
   }
 
   void _triggerDataLoads(BuildContext context, {required int boothId}) {
-    context.read<VotersListBloc>().add(FetchVotersListEvent(boothId: boothId));
+    context.read<VotersRecentBloc>().add(
+      FetchVotersRecentEvent(boothId: boothId),
+    );
+
     context.read<VotersStatsBloc>().add(
       FetchVotersStatsEvent(boothId: boothId),
     );
     context.read<PartyListBloc>().add(FetchPartyListEvent());
     context.read<PartyStatsBloc>().add(FetchPartysStatsEvent(boothId: boothId));
+    context.read<ReligionGroupStatsBloc>().add(
+      FetchReligionGroupStatsEvent(boothId: boothId),
+    );
     context.read<AgeGroupStatsBloc>().add(
       FetchAgeGroupStatsEvent(boothId: boothId),
     );
+    context.read<VotersListBloc>().add(FetchVotersListEvent(boothId: boothId));
   }
 
   Widget _getCurrentScreen() {
@@ -72,7 +86,7 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
       case 1:
         return _buildAgeWiseView();
       case 2:
-        return _buildHouseWiseView();
+        return _buildReligionWise();
       case 3:
         return _buildVoterListView();
       default:
@@ -149,7 +163,7 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
 
         // Age groups
         SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 5.0),
           sliver: _buildAgeGroupStats(),
         ),
 
@@ -183,11 +197,41 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
         ),
 
         // Recent voters list
-        SliverToBoxAdapter(
-          child: Container(
-            height: MediaQuery.of(context).size.height / 2,
-            child: VotersListWidget(mode: VotersListWidgetMode.recent),
-          ),
+        BlocBuilder<VotersRecentBloc, VotersRecentState>(
+          builder: (context, state) {
+            if (state is VotersRecentLoading) {
+              return SliverToBoxAdapter(
+                child: Util.shimmerBox(
+                  height: 200,
+                  margin: EdgeInsets.symmetric(horizontal: 20),
+                ),
+              );
+            }
+
+            if (state is VotersRecentFailure) {
+              return const SliverFillRemaining(
+                child: Center(child: Text("Failed to load voters")),
+              );
+            }
+
+            if (state is VotersRecentSuccess) {
+              final voters = state.voters;
+              return SliverList(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final voter = voters[index];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 6,
+                    ),
+                    child: VoterCard(voterDetails: voter),
+                  );
+                }, childCount: (voters.length <= 5 ? voters.length : 4)),
+              );
+            }
+
+            return const SliverToBoxAdapter(child: SizedBox.shrink());
+          },
         ),
       ],
     );
@@ -197,8 +241,8 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
     return AgeWiseSection();
   }
 
-  Widget _buildHouseWiseView() {
-    return HouseWiseSection();
+  Widget _buildReligionWise() {
+    return ReligionWiseSection();
   }
 
   Widget _buildAgeGroupStats() {
@@ -211,8 +255,21 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
 
   Widget _buildVotersCensusStats() {
     return VotersCensusStatsWidget(
-      onTotalVoterClicked: (){
-         setState(() {
+      onPendingClicked: () {
+        BlocProvider.of<FilterCubit>(context).updateStatus("pending");
+        setState(() {
+          _currentIndex = 3;
+        });
+      },
+      onCompletedClicked: () {
+        BlocProvider.of<FilterCubit>(context).updateStatus("completed");
+        setState(() {
+          _currentIndex = 3;
+        });
+      },
+      onTotalVoterClicked: () {
+        BlocProvider.of<FilterCubit>(context).updateStatus("");
+        setState(() {
           _currentIndex = 3;
         });
       },
@@ -220,7 +277,14 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
   }
 
   Widget _buildPartyCensusStatus() {
-    return PartyCensusStatsWidget();
+    return PartyCensusStatsWidget(
+      onPartyChipClicked: (partyName) {
+        BlocProvider.of<FilterCubit>(context).updateAffiliation(partyName);
+        setState(() {
+          _currentIndex = 3;
+        });
+      },
+    );
   }
 
   Widget _buildBottomNavBar() {
@@ -240,7 +304,10 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
           label: 'Dashboard',
         ),
         BottomNavigationBarItem(icon: Icon(Icons.cake), label: 'Age Wise'),
-        BottomNavigationBarItem(icon: Icon(Icons.house), label: 'House Wise'),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.public),
+          label: 'Religion Wise',
+        ),
         BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Voter List'),
       ],
     );

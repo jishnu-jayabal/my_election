@@ -49,6 +49,8 @@ dependencies:
   intl: ^0.20.2
   intl_phone_field: ^3.2.0
   fl_chart: ^1.0.0
+  shimmer: ^3.0.0
+  google_fonts: ^6.3.0
 
 dev_dependencies:
   flutter_test:

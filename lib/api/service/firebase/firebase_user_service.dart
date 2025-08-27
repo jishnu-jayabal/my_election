@@ -1,7 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:election_mantra/api/models/age_group_stats.dart';
+import 'package:election_mantra/api/models/filter_model.dart';
 import 'package:election_mantra/api/models/party_census_stats.dart';
 import 'package:election_mantra/api/models/political_groups.dart';
+import 'package:election_mantra/api/models/religion.dart';
+import 'package:election_mantra/api/models/religion_group_stats.dart';
 import 'package:election_mantra/api/models/user.dart';
 import 'package:election_mantra/api/models/voter.dart';
 import 'package:election_mantra/api/models/voters_census_stats.dart';
@@ -107,24 +110,26 @@ class FirebaseUserService implements UserRepository {
     int? boothId,
     int? wardId,
     int? constituencyId,
+    int? limit,
   }) async {
     Query query = _firestore.collection('records');
 
     // ⚡ Match Firestore fields correctly
     if (boothId != null) {
-      query = query
-          .where('bhag_no', isEqualTo: boothId)
-          .orderBy('serial_no')
-          .limit(5);
+      query = query.where('bhag_no', isEqualTo: boothId).orderBy('serial_no');
     }
     if (constituencyId != null) {
       query = query
           .where('assembly', isEqualTo: constituencyId)
           .orderBy('serial_no');
     }
-    // wardId not available currently
+    if (limit != null) {
+      query = query.limit(limit);
+    }
 
     final snapshot = await query.get();
+
+    // wardId not available currently
 
     return snapshot.docs
         .map(
@@ -132,6 +137,72 @@ class FirebaseUserService implements UserRepository {
               VoterDetails.fromJson(doc.data() as Map<String, dynamic>, doc.id),
         )
         .toList();
+  }
+
+  @override
+  Future<List<VoterDetails>> getVotersByFilter({
+    int? boothId,
+    int? wardId,
+    int? constituencyId,
+    required FilterModel filter,
+  }) async {
+    try {
+      Query query = _firestore.collection('records');
+
+      // Apply location filters (only one can be active due to index constraints)
+      if (boothId != null) {
+        query = query.where('bhag_no', isEqualTo: boothId);
+      } else if (constituencyId != null) {
+        query = query.where('assembly', isEqualTo: constituencyId);
+        // For assembly queries, you'll need separate assembly-based indexes
+      }
+
+      // Apply filters in optimal order for index usage
+      if (filter.affiliation != null) {
+        query = query.where('party', isEqualTo: filter.affiliation);
+      }
+
+      if (filter.religion != null) {
+        query = query.where('religion', isEqualTo: filter.religion);
+      }
+
+      // Status filter - handle carefully
+      if (filter.status != null) {
+        if (filter.status == 'completed') {
+          query = query.where('updated_by', isNotEqualTo: '');
+        } else if (filter.status == 'pending') {
+          query = query.where('updated_by', isEqualTo: '');
+        }
+      }
+
+      // Age filter - MOST EXPENSIVE, apply last
+      if (filter.ageGroup != null && filter.ageGroup != 'Unknown') {
+        final ageRange = _getAgeRange(filter.ageGroup!);
+        if (ageRange != null) {
+          query = query
+              .where('age', isGreaterThanOrEqualTo: ageRange['min'])
+              .where('age', isLessThanOrEqualTo: ageRange['max']);
+        }
+      } else if (filter.ageGroup == 'Unknown') {
+        query = query.where('age', isNull: true);
+      }
+
+      // Always order by serial_no for consistent pagination
+      query = query.orderBy('serial_no');
+
+      final snapshot = await query.get();
+
+      return snapshot.docs
+          .map(
+            (doc) => VoterDetails.fromJson(
+              doc.data() as Map<String, dynamic>,
+              doc.id,
+            ),
+          )
+          .toList();
+    } catch (e) {
+      throw Exception('Failed to fetch filtered voters: $e');
+    }
   }
 
   // Get List of Groups/Political Parties
@@ -143,6 +214,19 @@ class FirebaseUserService implements UserRepository {
         snapshot.docs
             .map((doc) => PoliticalGroups.fromJson(doc.data()))
             .toList();
+
+    // Sort by `id` field (assuming it's an int)
+    groups.sort((a, b) => a.id.compareTo(b.id));
+
+    return groups;
+  }
+
+  @override
+  Future<List<Religion>> getReligions() async {
+    final snapshot = await _firestore.collection('religion').get();
+
+    final groups =
+        snapshot.docs.map((doc) => Religion.fromJson(doc.data())).toList();
 
     // Sort by `id` field (assuming it's an int)
     groups.sort((a, b) => a.id.compareTo(b.id));
@@ -255,63 +339,178 @@ class FirebaseUserService implements UserRepository {
       baseQuery = baseQuery.where('assembly', isEqualTo: constituencyId);
     }
 
-
+    // Get counts for mutually exclusive ranges
     final results = await Future.wait([
+      // 18-25 (exactly this range)
       baseQuery
           .where("age", isGreaterThanOrEqualTo: 18)
           .where("age", isLessThanOrEqualTo: 25)
           .count()
           .get(),
+
+      // 26-40 (exactly this range)
       baseQuery
           .where("age", isGreaterThanOrEqualTo: 26)
           .where("age", isLessThanOrEqualTo: 40)
           .count()
           .get(),
+
+      // 41-60 (exactly this range)
       baseQuery
           .where("age", isGreaterThanOrEqualTo: 41)
           .where("age", isLessThanOrEqualTo: 60)
           .count()
           .get(),
-      baseQuery.where("age", isGreaterThanOrEqualTo: 61).count().get(),
-      baseQuery.where("age", isNull: true).count().get(), // unknown
+
+      // 61+ (only greater than 60)
+      baseQuery.where("age", isGreaterThan: 60).count().get(),
+
+      // Unknown (null ages)
+      baseQuery.where("age", isNull: true).count().get(),
+
+      // Under 18 (if any exist)
+      baseQuery.where("age", isLessThan: 18).count().get(),
     ]);
 
-    final g18to25 = results[0].count ?? 0;
-    final g26to40 = results[1].count ?? 0;
-    final g41to60 = results[2].count ?? 0;
-    final g61plus = results[3].count ?? 0;
-    final unknown = results[4].count ?? 0;
+    final g18to25 = results[0].count;
+    final g26to40 = results[1].count;
+    final g41to60 = results[2].count;
+    final g61plus = results[3].count;
+    final unknown = results[4].count;
+    final under18 = results[5].count;
 
-    final total = g18to25 + g26to40 + g41to60 + g61plus + unknown;
+    // Calculate total from individual counts
+    final total =
+        g18to25! + g26to40! + g41to60! + g61plus! + unknown! + under18!;
 
     List<AgeGroupStats> stats = [
       AgeGroupStats(
         label: "18-25",
         count: g18to25,
-        percentage: (g18to25 / total) * 100,
+        percentage: total > 0 ? (g18to25 / total) * 100 : 0,
       ),
       AgeGroupStats(
         label: "26-40",
         count: g26to40,
-        percentage: (g26to40 / total) * 100,
+        percentage: total > 0 ? (g26to40 / total) * 100 : 0,
       ),
       AgeGroupStats(
         label: "41-60",
         count: g41to60,
-        percentage: (g41to60 / total) * 100,
+        percentage: total > 0 ? (g41to60 / total) * 100 : 0,
       ),
       AgeGroupStats(
         label: "61+",
         count: g61plus,
-        percentage: (g61plus / total) * 100,
+        percentage: total > 0 ? (g61plus / total) * 100 : 0,
       ),
       AgeGroupStats(
         label: "Unknown",
         count: unknown,
-        percentage: (unknown / total) * 100,
+        percentage: total > 0 ? (unknown / total) * 100 : 0,
       ),
     ];
 
+    // Optional: Include under 18 if needed
+    if (under18 > 0) {
+      stats.insert(
+        0,
+        AgeGroupStats(
+          label: "Under 18",
+          count: under18,
+          percentage: total > 0 ? (under18 / total) * 100 : 0,
+        ),
+      );
+    }
+
     return stats;
+  }
+
+  @override
+  Future<List<ReligionGroupStats>> getReligionGroupStats({
+    int? boothId,
+    int? wardId,
+    int? constituencyId,
+  }) async {
+    final votersRef = _firestore.collection("records");
+
+    Query baseQuery = votersRef;
+    if (boothId != null) {
+      baseQuery = baseQuery.where("bhag_no", isEqualTo: boothId);
+    }
+    if (constituencyId != null) {
+      baseQuery = baseQuery.where("assembly", isEqualTo: constituencyId);
+    }
+
+    // Get total voters count
+    final totalSnap = await baseQuery.count().get();
+    final total = totalSnap.count ?? 0;
+
+    // Get configured religions (already includes Other & Unidentified)
+    final religions = await getReligions(); // List<Religion>
+
+    List<ReligionGroupStats> result = [];
+
+    int knownTotal = 0;
+    Religion? otherReligion;
+
+    for (var religion in religions) {
+      if (religion.value == "other") {
+        otherReligion = religion;
+        // skip "other" for now, we'll compute it later
+        continue;
+      }
+
+      final snap =
+          await baseQuery
+              .where("religion", isEqualTo: religion.value)
+              .count()
+              .get();
+
+      final count = snap.count ?? 0;
+      knownTotal += count;
+
+      final percentage = total > 0 ? (count / total) * 100 : 0.0;
+
+      result.add(
+        ReligionGroupStats(
+          label: religion.name,
+          count: count,
+          color: religion.color,
+          percentage: double.parse(percentage.toStringAsFixed(2)),
+        ),
+      );
+    }
+
+    // Now calculate "Other"
+    final otherCount = total - knownTotal;
+    final otherPercentage = total > 0 ? (otherCount / total) * 100 : 0.0;
+
+    result.add(
+      ReligionGroupStats(
+        label: "Other",
+        count: otherCount,
+        color: otherReligion != null ? otherReligion.color : "#fffffff",
+        percentage: double.parse(otherPercentage.toStringAsFixed(2)),
+      ),
+    );
+
+    return result;
+  }
+
+  // Helper method to convert age group label to numeric range
+  Map<String, int>? _getAgeRange(String ageGroup) {
+    switch (ageGroup) {
+      case '18-25':
+        return {'min': 18, 'max': 25};
+      case '26-40':
+        return {'min': 26, 'max': 40};
+      case '41-60':
+        return {'min': 41, 'max': 60};
+      case '61+':
+        return {'min': 61, 'max': 150}; // Using 150 as a reasonable upper limit
+      default:
+        return null;
+    }
   }
 }

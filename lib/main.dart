@@ -4,8 +4,12 @@ import 'package:election_mantra/presentation/blocs/age_group_stats/age_group_sta
 import 'package:election_mantra/presentation/blocs/login/login_bloc.dart';
 import 'package:election_mantra/presentation/blocs/party_list/party_list_bloc.dart';
 import 'package:election_mantra/presentation/blocs/party_stats/party_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/religion/religion_bloc.dart';
+import 'package:election_mantra/presentation/blocs/religion_group_stats/religion_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_list/voters_list_bloc.dart';
+import 'package:election_mantra/presentation/blocs/voters_recent/voters_recent_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_stats/voters_stats_bloc.dart';
+import 'package:election_mantra/presentation/cubit/cubit/filter_cubit.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -39,10 +43,14 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [BlocProvider<LoginBloc>(create: (context) => LoginBloc()),
       BlocProvider<VotersListBloc>(create: (context) => VotersListBloc()),
+      BlocProvider<VotersRecentBloc>(create: (context) => VotersRecentBloc()),
       BlocProvider<VotersStatsBloc>(create: (context) => VotersStatsBloc()),
       BlocProvider<PartyStatsBloc>(create: (context) => PartyStatsBloc()),
       BlocProvider<PartyListBloc>(create: (context) => PartyListBloc()),
       BlocProvider<AgeGroupStatsBloc>(create: (context) => AgeGroupStatsBloc()),
+      BlocProvider<ReligionGroupStatsBloc>(create: (context) => ReligionGroupStatsBloc()),
+      BlocProvider<ReligionBloc>(create: (context) => ReligionBloc()),
+      BlocProvider<FilterCubit>(create: (context) => FilterCubit()),
       ],
       child: MaterialApp(
         title: 'Election Mantra',

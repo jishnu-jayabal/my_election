@@ -1,45 +1,50 @@
-import 'package:election_mantra/api/models/voter.dart';
+import 'package:election_mantra/api/models/filter_model.dart';
 import 'package:election_mantra/core/util.dart';
+import 'package:election_mantra/presentation/blocs/age_group_stats/age_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/party_list/party_list_bloc.dart';
+import 'package:election_mantra/presentation/blocs/religion/religion_bloc.dart';
+import 'package:election_mantra/presentation/cubit/cubit/filter_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-enum FilterStatus { pending, completed }
-
-enum FilterAge { age18_25, age26_40, age40_60, age60_plus }
-
-enum FilterReligion { hindu, muslim, christian, noReligion }
-
 class FilterWidget extends StatefulWidget {
-  final ValueChanged<Map<String, dynamic>> onFiltersChanged;
-  final Map<String, dynamic> initialFilters;
+  final ValueChanged<FilterModel> onFiltersChanged;
 
-  const FilterWidget({
-    super.key,
-    required this.onFiltersChanged,
-    this.initialFilters = const {},
-  });
+  const FilterWidget({super.key, required this.onFiltersChanged});
 
   @override
   State<FilterWidget> createState() => _FilterWidgetState();
 }
 
 class _FilterWidgetState extends State<FilterWidget> {
-  late Map<String, dynamic> _currentFilters;
+  late FilterModel _currentFilters;
 
   @override
   void initState() {
     super.initState();
-    _currentFilters = Map<String, dynamic>.from(widget.initialFilters);
+    _currentFilters = context.read<FilterCubit>().state;
 
-    // Ensure party list is loaded
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<PartyListBloc>().add(FetchPartyListEvent());
+      context.read<ReligionBloc>().add(FetchReligionEvent());
+      context.read<AgeGroupStatsBloc>().add(FetchAgeGroupStatsEvent());
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    return BlocListener<FilterCubit, FilterModel>(
+      listener: (context, state) {
+        setState(() {
+          _currentFilters = state;
+        });
+      },
+      child: _buildFilterMode(),
+    );
+  }
+
+  /// ---------------- FILTER MODE ----------------
+  Widget _buildFilterMode() {
     return Scaffold(
       body: SafeArea(
         child: Container(
@@ -78,49 +83,16 @@ class _FilterWidgetState extends State<FilterWidget> {
               ),
               const SizedBox(height: 16),
 
-              // Status Filter
-              _buildFilterSection(
-                title: 'Voting Status',
-                filters: [
-                  _buildFilterChip(
-                    label: 'Pending',
-                    value: FilterStatus.pending,
-                    selected: _currentFilters['status'] == FilterStatus.pending,
-                    onSelected:
-                        (selected) => _updateFilter(
-                          'status',
-                          selected ? FilterStatus.pending : null,
-                        ),
-                  ),
-                  _buildFilterChip(
-                    label: 'Completed',
-                    value: FilterStatus.completed,
-                    selected:
-                        _currentFilters['status'] == FilterStatus.completed,
-                    onSelected:
-                        (selected) => _updateFilter(
-                          'status',
-                          selected ? FilterStatus.completed : null,
-                        ),
-                  ),
-                ],
-              ),
-
+              _buildStatusFilter(),
               const SizedBox(height: 20),
 
-              // Dynamic Affiliation Filter from PartyListBloc
-              _buildDynamicAffiliationFilter(),
-
+              _buildPoliticalAffiliationFilter(),
               const SizedBox(height: 20),
 
-              // Age Group Filter
               _buildAgeFilter(),
-
               const SizedBox(height: 20),
 
-              // Religion Filter
               _buildReligionFilter(),
-
               const SizedBox(height: 24),
 
               // Action Buttons
@@ -135,10 +107,7 @@ class _FilterWidgetState extends State<FilterWidget> {
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      widget.onFiltersChanged(_currentFilters);
-                      Navigator.pop(context);
-                    },
+                    onPressed: _applyFilters,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blueAccent,
                       foregroundColor: Colors.white,
@@ -154,111 +123,99 @@ class _FilterWidgetState extends State<FilterWidget> {
     );
   }
 
-  Widget _buildReligionFilter() {
+  /// ---------------- FILTER SECTIONS ----------------
+  Widget _buildStatusFilter() {
     return _buildFilterSection(
-      title: 'Religion',
+      title: 'Voting Status',
       filters: [
         _buildFilterChip(
-          label: 'Hindu',
-          value: FilterReligion.hindu,
-          selected: _currentFilters['religion'] == FilterReligion.hindu,
+          label: 'Pending',
+          value: 'pending',
+          selected: _currentFilters.status == 'pending',
           onSelected:
-              (selected) => _updateFilter(
-                'religion',
-                selected ? FilterReligion.hindu : null,
-              ),
+              (selected) => _updateFilter(status: selected ? 'pending' : null),
         ),
         _buildFilterChip(
-          label: 'Muslim',
-          value: FilterReligion.muslim,
-          selected: _currentFilters['religion'] == FilterReligion.muslim,
+          label: 'Completed',
+          value: 'completed',
+          selected: _currentFilters.status == 'completed',
           onSelected:
-              (selected) => _updateFilter(
-                'religion',
-                selected ? FilterReligion.muslim : null,
-              ),
-        ),
-        _buildFilterChip(
-          label: 'Christian',
-          value: FilterReligion.christian,
-          selected: _currentFilters['religion'] == FilterReligion.christian,
-          onSelected:
-              (selected) => _updateFilter(
-                'religion',
-                selected ? FilterReligion.christian : null,
-              ),
-        ),
-        _buildFilterChip(
-          label: 'No Religion',
-          value: FilterReligion.noReligion,
-          selected: _currentFilters['religion'] == FilterReligion.noReligion,
-          onSelected:
-              (selected) => _updateFilter(
-                'religion',
-                selected ? FilterReligion.noReligion : null,
-              ),
+              (selected) =>
+                  _updateFilter(status: selected ? 'completed' : null),
         ),
       ],
     );
   }
 
   Widget _buildAgeFilter() {
-    return _buildFilterSection(
-      title: 'Age Group',
-      filters: [
-        _buildFilterChip(
-          label: '18-25',
-          value: FilterAge.age18_25,
-          selected: _currentFilters['age'] == FilterAge.age18_25,
-          onSelected:
-              (selected) =>
-                  _updateFilter('age', selected ? FilterAge.age18_25 : null),
-        ),
-        _buildFilterChip(
-          label: '26-40',
-          value: FilterAge.age26_40,
-          selected: _currentFilters['age'] == FilterAge.age26_40,
-          onSelected:
-              (selected) =>
-                  _updateFilter('age', selected ? FilterAge.age26_40 : null),
-        ),
-        _buildFilterChip(
-          label: '40-60',
-          value: FilterAge.age40_60,
-          selected: _currentFilters['age'] == FilterAge.age40_60,
-          onSelected:
-              (selected) =>
-                  _updateFilter('age', selected ? FilterAge.age40_60 : null),
-        ),
-        _buildFilterChip(
-          label: '60+',
-          value: FilterAge.age60_plus,
-          selected: _currentFilters['age'] == FilterAge.age60_plus,
-          onSelected:
-              (selected) =>
-                  _updateFilter('age', selected ? FilterAge.age60_plus : null),
-        ),
-      ],
+    return BlocBuilder<AgeGroupStatsBloc, AgeGroupStatsState>(
+      builder: (context, state) {
+        if (state is AgeGroupStatsSuccess) {
+          return _buildFilterSection(
+            title: 'Age Group',
+            filters:
+                state.ageGroupStats.map((e) {
+                  return _buildFilterChip(
+                    label: e.label,
+                    value: e.label,
+                    selected: _currentFilters.ageGroup == e.label,
+                    onSelected:
+                        (selected) =>
+                            _updateFilter(ageGroup: selected ? e.label : null),
+                  );
+                }).toList(),
+          );
+        }
+        return const SizedBox(height: 50, child: LinearProgressIndicator());
+      },
     );
   }
 
-  // Build dynamic affiliation filter from PartyListBloc
-  Widget _buildDynamicAffiliationFilter() {
+  Widget _buildReligionFilter() {
+    return BlocBuilder<ReligionBloc, ReligionState>(
+      builder: (context, state) {
+        if (state is ReligionSuccess) {
+          return _buildFilterSection(
+            title: 'Religion',
+            filters:
+                state.religions.map((religion) {
+                  return _buildFilterChip(
+                    color: Util.hexToColor(religion.color),
+                    label: religion.name,
+                    value: religion.value,
+                    selected: _currentFilters.religion == religion.value,
+                    onSelected:
+                        (selected) => _updateFilter(
+                          religion: selected ? religion.value : null,
+                        ),
+                  );
+                }).toList(),
+          );
+        } else if (state is ReligionLoading) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        } else {
+          return const SizedBox.shrink();
+        }
+      },
+    );
+  }
+
+  Widget _buildPoliticalAffiliationFilter() {
     return BlocBuilder<PartyListBloc, PartyListState>(
       builder: (context, state) {
         if (state is PartyListSuccess) {
-          // Create filter chips for each political group
           final affiliationFilters =
               state.politicalGroups.map((politicalGroup) {
                 return _buildFilterChip(
                   label: politicalGroup.name,
-                  value: politicalGroup.name, // Use the code as value
-                  selected:
-                      _currentFilters['affiliation'] == politicalGroup.name,
+                  value: politicalGroup.name,
+                  selected: _currentFilters.affiliation == politicalGroup.name,
                   onSelected:
                       (selected) => _updateFilter(
-                        'affiliation',
-                        selected ? politicalGroup.name : null,
+                        affiliation: selected ? politicalGroup.name : null,
                       ),
                   color: Util.hexToColor(politicalGroup.color),
                 );
@@ -288,6 +245,7 @@ class _FilterWidgetState extends State<FilterWidget> {
     );
   }
 
+  /// ---------------- HELPER WIDGETS ----------------
   Widget _buildFilterSection({
     required String title,
     required List<Widget> filters,
@@ -339,21 +297,33 @@ class _FilterWidgetState extends State<FilterWidget> {
     );
   }
 
-  void _updateFilter(String key, dynamic value) {
-    setState(() {
-      if (value == null) {
-        _currentFilters.remove(key);
-      } else {
-        _currentFilters[key] = value;
-      }
-      widget.onFiltersChanged(_currentFilters);
-    });
+  void _updateFilter({
+    String? status,
+    String? affiliation,
+    String? ageGroup,
+    String? religion,
+  }) {
+    context.read<FilterCubit>().updateFilter(
+      status: status,
+      affiliation: affiliation,
+      ageGroup: ageGroup,
+      religion: religion,
+    );
+
+    widget.onFiltersChanged(context.read<FilterCubit>().state); // notify parent
   }
 
   void _clearAllFilters() {
     setState(() {
-      _currentFilters.clear();
-      widget.onFiltersChanged(_currentFilters);
+      _currentFilters = FilterModel.initial();
     });
+    context.read<FilterCubit>().clearAllFilters();
+    widget.onFiltersChanged(_currentFilters); // 🔑 ensure parent notified
+  }
+
+  void _applyFilters() {
+    context.read<FilterCubit>().emit(_currentFilters); // sync cubit
+    widget.onFiltersChanged(_currentFilters); // notify parent
+    Navigator.pop(context);
   }
 }

@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class PartyCensusStatsWidget extends StatelessWidget {
-  const PartyCensusStatsWidget({super.key});
+  final Function(String) onPartyChipClicked;
+
+  const PartyCensusStatsWidget({super.key , required this.onPartyChipClicked});
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +33,11 @@ class PartyCensusStatsWidget extends StatelessWidget {
                                   0; // <- lookup by party id
                               return Padding(
                                 padding: const EdgeInsets.only(right: 8),
-                                child: _buildPartyChip(e.name, count, color),
+                                child: InkWell(
+                                  onTap: (){
+                                    onPartyChipClicked(e.name);
+                                  },
+                                  child: _buildPartyChip(e.name, count, color)),
                               );
                             }).toList(),
                       ),
@@ -43,8 +49,11 @@ class PartyCensusStatsWidget extends StatelessWidget {
             },
           );
         }
-        return const SliverToBoxAdapter(
-          child: Center(child: LinearProgressIndicator()),
+        return  SliverToBoxAdapter(
+          child: Center(child: Util.shimmerBox(
+            height: 50
+            ,margin: EdgeInsets.symmetric(horizontal: 15)
+          )),
         );
       },
     );

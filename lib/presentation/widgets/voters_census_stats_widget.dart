@@ -1,11 +1,16 @@
+import 'package:election_mantra/core/util.dart';
 import 'package:election_mantra/presentation/blocs/voters_stats/voters_stats_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class VotersCensusStatsWidget extends StatelessWidget {
 final GestureTapCallback onTotalVoterClicked;
+final GestureTapCallback onPendingClicked;
+final GestureTapCallback onCompletedClicked;
   const VotersCensusStatsWidget({super.key,
-  required this.onTotalVoterClicked
+  required this.onTotalVoterClicked,
+  required this.onCompletedClicked,
+  required this.onPendingClicked
   });
 
   @override
@@ -34,20 +39,26 @@ final GestureTapCallback onTotalVoterClicked;
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _buildStatCard(
-                        "Completed",
-                        state.voterCensusStats.completedVoters.toString(),
-                        Colors.green,
-                        Icons.check_circle,
+                      child: InkWell(
+                        onTap: onCompletedClicked,
+                        child: _buildStatCard(
+                          "Completed",
+                          state.voterCensusStats.completedVoters.toString(),
+                          Colors.green,
+                          Icons.check_circle,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: _buildStatCard(
-                        "Pending",
-                        state.voterCensusStats.pendingVoters.toString(),
-                        Colors.orange,
-                        Icons.pending_actions,
+                      child: InkWell(
+                        onTap: onPendingClicked,
+                        child: _buildStatCard(
+                          "Pending",
+                          state.voterCensusStats.pendingVoters.toString(),
+                          Colors.orange,
+                          Icons.pending_actions,
+                        ),
                       ),
                     ),
                   ],
@@ -57,7 +68,9 @@ final GestureTapCallback onTotalVoterClicked;
           );
         }
 
-        return const SliverToBoxAdapter(child: LinearProgressIndicator());
+        return  SliverToBoxAdapter(child: Util.shimmerBox(
+          height: 200,margin: EdgeInsets.symmetric(horizontal: 15)
+        ));
       },
     );
   }
