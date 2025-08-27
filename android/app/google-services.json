@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "882353411140",
+    "project_id": "election-mantra",
+    "storage_bucket": "election-mantra.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:882353411140:android:3fd51cfc4eef2d548f5811",
+        "android_client_info": {
+          "package_name": "com.example.my_election"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBu5A5BZ0pQJTZukUHCdA-Evv300ReytYY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:882353411140:android:6a0a43328377edda8f5811",
+        "android_client_info": {
+          "package_name": "com.rajat.my_election"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBu5A5BZ0pQJTZukUHCdA-Evv300ReytYY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
