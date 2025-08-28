@@ -3,12 +3,14 @@ class FilterModel {
   final String? affiliation;
   final String? ageGroup;
   final String? religion;
+  final String? gender;
 
   FilterModel({
     this.status,
     this.affiliation,
     this.ageGroup,
     this.religion,
+    this.gender,
   });
 
   factory FilterModel.initial() => FilterModel();
@@ -20,12 +22,14 @@ class FilterModel {
     Object? affiliation = _sentinel,
     Object? ageGroup = _sentinel,
     Object? religion = _sentinel,
+    Object? gender = _sentinel,
   }) {
     return FilterModel(
       status: status == _sentinel ? this.status : status as String?,
       affiliation: affiliation == _sentinel ? this.affiliation : affiliation as String?,
       ageGroup: ageGroup == _sentinel ? this.ageGroup : ageGroup as String?,
       religion: religion == _sentinel ? this.religion : religion as String?,
+      gender: gender == _sentinel ? this.gender : gender as String?,
     );
   }
 
@@ -35,6 +39,7 @@ class FilterModel {
     if (affiliation != null) params['affiliation'] = affiliation!;
     if (ageGroup != null) params['age_group'] = ageGroup!;
     if (religion != null) params['religion'] = religion!;
+    if (gender != null) params['gender'] = religion!;
     return params;
   }
 
@@ -42,13 +47,14 @@ class FilterModel {
     return status != null ||
         affiliation != null ||
         ageGroup != null ||
-        religion != null;
+        religion != null ||
+        gender != null;
   }
 
   FilterModel clearAll() => FilterModel();
 
   @override
   String toString() {
-    return 'FilterModel(status: $status, affiliation: $affiliation, ageGroup: $ageGroup, religion: $religion)';
+    return 'FilterModel(status: $status, affiliation: $affiliation, ageGroup: $ageGroup, religion: $religion, gender $gender)';
   }
 }

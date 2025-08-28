@@ -7,24 +7,50 @@ class FetchVotersListEvent extends VotersListEvent {
   final int? boothId;
   final int? wardId;
   final int? constituencyId;
-  FetchVotersListEvent(
-    {
-      this.boothId,
-      this.constituencyId,
-      this.wardId
-    }
-  );
+  FetchVotersListEvent({this.boothId, this.constituencyId, this.wardId});
 }
 
+class SearchVoterListEvent extends VotersListEvent {
+  final String? searchTerm;
+  SearchVoterListEvent({
+    required this.searchTerm,
+  });
+}
 
-class FetchVoterListByFilterEvent extends VotersListEvent {
-    final int? boothId;
+class SearchHouseListEvent extends VotersListEvent {
+  final String? searchTerm;
+  SearchHouseListEvent({
+    required this.searchTerm,
+  });
+}
+
+class FetchVoterListByFilterEventNetwork extends VotersListEvent {
+  final int? boothId;
   final int? wardId;
   final int? constituencyId;
   final FilterModel filter;
-  FetchVoterListByFilterEvent({
+  FetchVoterListByFilterEventNetwork({
     required this.boothId,
     required this.constituencyId,
     required this.wardId,
-    required this.filter});
+    required this.filter,
+  });
+}
+
+class FetchVoterListByFilterEventLocal extends VotersListEvent {
+  final int? boothId;
+  final int? wardId;
+  final int? constituencyId;
+  final FilterModel filter;
+  FetchVoterListByFilterEventLocal({
+    required this.boothId,
+    required this.constituencyId,
+    required this.wardId,
+    required this.filter,
+  });
+}
+
+class ReplcaeVoterDetailsevent extends VotersListEvent {
+  final VoterDetails voterDetails;
+  ReplcaeVoterDetailsevent({required this.voterDetails});
 }

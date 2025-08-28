@@ -17,7 +17,7 @@ class ReligionGroupStatsBloc
     on<FetchReligionGroupStatsEvent>((event, emit) async {
       try {
         emit(ReligionGroupStatsLoading());
-        List<ReligionGroupStats> religionGroupStats = await _apiBridge.getReligionGroupStats(
+        List<ReligionGroupStats> religionGroupStats = await _apiBridge.getReligionGroupStatsCount(
           boothId: event.boothId,
           constituencyId: event.constituencyId,
           wardId: event.wardId,

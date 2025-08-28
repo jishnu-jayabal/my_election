@@ -9,6 +9,7 @@ class FilterCubit extends Cubit<FilterModel> {
     String? affiliation,
     String? ageGroup,
     String? religion,
+    String? gender,
   }) {
     emit(
       state.copyWith(
@@ -16,6 +17,7 @@ class FilterCubit extends Cubit<FilterModel> {
         affiliation: affiliation ?? state.affiliation,
         ageGroup: ageGroup ?? state.ageGroup,
         religion: religion ?? state.religion,
+        gender: gender ?? state.gender,
       ),
     );
   }
@@ -37,6 +39,10 @@ class FilterCubit extends Cubit<FilterModel> {
     emit(state.copyWith(religion: religion));
   }
 
+  void updateGender(String? gender) {
+    emit(state.copyWith(gender: gender));
+  }
+
   void clearAllFilters() {
     emit(FilterModel.initial());
   }
@@ -55,6 +61,9 @@ class FilterCubit extends Cubit<FilterModel> {
       case FilterType.religion:
         emit(state.copyWith(religion: null));
         break;
+      case FilterType.gender:
+        emit(state.copyWith(gender: null));
+        break;
     }
   }
 
@@ -63,4 +72,4 @@ class FilterCubit extends Cubit<FilterModel> {
   FilterModel get currentFilters => state;
 }
 
-enum FilterType { status, affiliation, ageGroup, religion }
+enum FilterType { status, affiliation, ageGroup, religion , gender }

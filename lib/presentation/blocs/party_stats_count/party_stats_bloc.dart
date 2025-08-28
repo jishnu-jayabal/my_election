@@ -17,7 +17,7 @@ class PartyStatsBloc extends Bloc<PartyStatsEvent, PartyStatsState> {
       try {
         emit(PartyStatsLoading());
         Map<String, PartyCensusStats> partyCensusStats = await _apiBridge
-            .getPartySupportPercentage(
+            .getPartySupportCount(
               boothId: event.boothId,
               constituencyId: event.constituencyId,
               wardId: event.wardId,

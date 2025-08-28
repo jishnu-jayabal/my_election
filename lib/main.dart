@@ -1,14 +1,15 @@
 import 'package:election_mantra/app_routes.dart';
 import 'package:election_mantra/core/dependency.dart';
-import 'package:election_mantra/presentation/blocs/age_group_stats/age_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/age_group_stats_count/age_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/login/login_bloc.dart';
 import 'package:election_mantra/presentation/blocs/party_list/party_list_bloc.dart';
-import 'package:election_mantra/presentation/blocs/party_stats/party_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/party_stats_count/party_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/religion/religion_bloc.dart';
-import 'package:election_mantra/presentation/blocs/religion_group_stats/religion_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/religion_group_stats_count/religion_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/startup/startup_bloc.dart';
+import 'package:election_mantra/presentation/blocs/update_voter/update_voter_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_list/voters_list_bloc.dart';
-import 'package:election_mantra/presentation/blocs/voters_recent/voters_recent_bloc.dart';
-import 'package:election_mantra/presentation/blocs/voters_stats/voters_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/voters_stats_count/voters_stats_bloc.dart';
 import 'package:election_mantra/presentation/cubit/cubit/filter_cubit.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -42,14 +43,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [BlocProvider<LoginBloc>(create: (context) => LoginBloc()),
+      BlocProvider<StartupBloc>(create: (context) => StartupBloc()),
       BlocProvider<VotersListBloc>(create: (context) => VotersListBloc()),
-      BlocProvider<VotersRecentBloc>(create: (context) => VotersRecentBloc()),
       BlocProvider<VotersStatsBloc>(create: (context) => VotersStatsBloc()),
       BlocProvider<PartyStatsBloc>(create: (context) => PartyStatsBloc()),
       BlocProvider<PartyListBloc>(create: (context) => PartyListBloc()),
       BlocProvider<AgeGroupStatsBloc>(create: (context) => AgeGroupStatsBloc()),
       BlocProvider<ReligionGroupStatsBloc>(create: (context) => ReligionGroupStatsBloc()),
       BlocProvider<ReligionBloc>(create: (context) => ReligionBloc()),
+      BlocProvider<UpdateVoterBloc>(create: (context) => UpdateVoterBloc()),
       BlocProvider<FilterCubit>(create: (context) => FilterCubit()),
       ],
       child: MaterialApp(
@@ -59,7 +61,7 @@ class MyApp extends StatelessWidget {
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
         initialRoute: AppRoutes.splash,
-        routes: AppRoutes.routes,
+        onGenerateRoute: AppRoutes.generateRoute,
         debugShowCheckedModeBanner: false,
       ),
     );

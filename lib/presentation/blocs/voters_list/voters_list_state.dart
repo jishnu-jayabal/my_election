@@ -9,8 +9,9 @@ final class VotersListLoading extends VotersListState{}
 
 final class VotersListSuccess extends VotersListState{
   final List<VoterDetails> voters;
+  final Map<String, List<VoterDetails>> houseWise;
   VotersListSuccess(
-    {required this.voters}
+    {required this.voters,required this.houseWise}
   );
 }
 

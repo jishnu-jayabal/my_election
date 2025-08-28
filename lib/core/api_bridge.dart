@@ -1,10 +1,15 @@
 import 'package:election_mantra/api/models/age_group_stats.dart';
+import 'package:election_mantra/api/models/education.dart';
 import 'package:election_mantra/api/models/filter_model.dart';
+import 'package:election_mantra/api/models/gender.dart';
 import 'package:election_mantra/api/models/party_census_stats.dart';
 import 'package:election_mantra/api/models/political_groups.dart';
 import 'package:election_mantra/api/models/religion.dart';
 import 'package:election_mantra/api/models/religion_group_stats.dart';
-import 'package:election_mantra/api/models/voter.dart';
+import 'package:election_mantra/api/models/staying_status.dart';
+import 'package:election_mantra/api/models/voter_details.dart';
+import 'package:election_mantra/api/models/voter_cocern.dart';
+import 'package:election_mantra/api/models/voter_type.dart';
 import 'package:election_mantra/api/models/voters_census_stats.dart';
 import 'package:get_it/get_it.dart';
 import 'package:election_mantra/api/models/user.dart';
@@ -51,13 +56,18 @@ class ApiBridge {
     int? wardId,
     int? constituencyId,
     int? limit,
+    String? searchTerm,
   }) {
     return _userRepository.getVoters(
       boothId: boothId,
       constituencyId: constituencyId,
       wardId: wardId,
-      limit:limit
+      limit: limit,
     );
+  }
+
+  Future<void> updateVoter(VoterDetails voterDetails) async {
+    return _userRepository.updateVoter(voterDetails);
   }
 
   Future<List<VoterDetails>> getVotersByFilter({
@@ -82,48 +92,68 @@ class ApiBridge {
     return _userRepository.getReligions();
   }
 
-  Future<Map<String, PartyCensusStats>> getPartySupportPercentage({
+  Future<List<Education>> getEducation() async {
+    return _userRepository.getEducation();
+  }
+
+  Future<List<Gender>> getGender() async {
+    return _userRepository.getGender();
+  }
+
+  Future<List<VoterType>> getVoterType() async {
+    return _userRepository.getVoterType();
+  }
+
+  Future<List<VoterConcern>> getVoterConcern() async {
+    return _userRepository.getVoterConcern();
+  }
+
+  Future<List<StayingStatus>> getStayingStatus() async {
+    return _userRepository.getStayingStatus();
+  }
+
+  Future<Map<String, PartyCensusStats>> getPartySupportCount({
     int? boothId,
     int? wardId,
     int? constituencyId,
   }) {
-    return _userRepository.getPartySupportPercentage(
+    return _userRepository.getPartySupportCount(
       boothId: boothId,
       constituencyId: constituencyId,
       wardId: wardId,
     );
   }
 
-  Future<VoterCensusStats> getVoterCensusStats({
+  Future<VoterCensusStats> getVoterCensusStatsCount({
     int? boothId,
     int? wardId,
     int? constituencyId,
   }) {
-    return _userRepository.getVoterCensusStats(
+    return _userRepository.getVoterCensusStatsCount(
       boothId: boothId,
       constituencyId: constituencyId,
       wardId: wardId,
     );
   }
 
-  Future<List<AgeGroupStats>> getAgeGroupStats({
+  Future<List<AgeGroupStats>> getAgeGroupStatsCount({
     int? boothId,
     int? wardId,
     int? constituencyId,
   }) async {
-    return _userRepository.getAgeGroupStats(
+    return _userRepository.getAgeGroupStatsCount(
       boothId: boothId,
       constituencyId: constituencyId,
       wardId: wardId,
     );
   }
 
-  Future<List<ReligionGroupStats>> getReligionGroupStats({
+  Future<List<ReligionGroupStats>> getReligionGroupStatsCount({
     int? boothId,
     int? wardId,
     int? constituencyId,
   }) async {
-    return _userRepository.getReligionGroupStats(
+    return _userRepository.getReligionGroupStatsCount(
       boothId: boothId,
       constituencyId: constituencyId,
       wardId: wardId,

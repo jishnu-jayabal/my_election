@@ -1,12 +1,14 @@
+import 'package:election_mantra/api/models/religion.dart';
 import 'package:election_mantra/core/util.dart';
-import 'package:election_mantra/presentation/blocs/age_group_stats/age_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/age_group_stats_count/age_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/login/login_bloc.dart';
 import 'package:election_mantra/presentation/blocs/party_list/party_list_bloc.dart';
-import 'package:election_mantra/presentation/blocs/party_stats/party_stats_bloc.dart';
-import 'package:election_mantra/presentation/blocs/religion_group_stats/religion_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/party_stats_count/party_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/religion/religion_bloc.dart';
+import 'package:election_mantra/presentation/blocs/religion_group_stats_count/religion_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/startup/startup_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_list/voters_list_bloc.dart';
-import 'package:election_mantra/presentation/blocs/voters_recent/voters_recent_bloc.dart';
-import 'package:election_mantra/presentation/blocs/voters_stats/voters_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/voters_stats_count/voters_stats_bloc.dart';
 import 'package:election_mantra/presentation/cubit/cubit/filter_cubit.dart';
 import 'package:election_mantra/presentation/widgets/age_group_stats_widget.dart';
 import 'package:election_mantra/presentation/widgets/age_wise_section.dart';
@@ -14,9 +16,8 @@ import 'package:election_mantra/presentation/widgets/header.dart';
 import 'package:election_mantra/presentation/widgets/party_census_stats_widget.dart';
 import 'package:election_mantra/presentation/widgets/religion_wise_section.dart';
 import 'package:election_mantra/presentation/widgets/side_menu.dart';
-import 'package:election_mantra/presentation/widgets/voter_card.dart';
 import 'package:election_mantra/presentation/widgets/voters_census_stats_widget.dart';
-import 'package:election_mantra/presentation/widgets/voters_list_widget.dart';
+import 'package:election_mantra/presentation/widgets/voters_list_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -61,14 +62,11 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
   }
 
   void _triggerDataLoads(BuildContext context, {required int boothId}) {
-    context.read<VotersRecentBloc>().add(
-      FetchVotersRecentEvent(boothId: boothId),
-    );
-
     context.read<VotersStatsBloc>().add(
       FetchVotersStatsEvent(boothId: boothId),
     );
     context.read<PartyListBloc>().add(FetchPartyListEvent());
+    context.read<ReligionBloc>().add(FetchReligionEvent());
     context.read<PartyStatsBloc>().add(FetchPartysStatsEvent(boothId: boothId));
     context.read<ReligionGroupStatsBloc>().add(
       FetchReligionGroupStatsEvent(boothId: boothId),
@@ -77,6 +75,7 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
       FetchAgeGroupStatsEvent(boothId: boothId),
     );
     context.read<VotersListBloc>().add(FetchVotersListEvent(boothId: boothId));
+    context.read<StartupBloc>().add(FetchStartupEvent());
   }
 
   Widget _getCurrentScreen() {
@@ -168,71 +167,6 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
         ),
 
         const SliverToBoxAdapter(child: SizedBox(height: 16)),
-
-        // Recent voters header
-        SliverPadding(
-          padding: const EdgeInsets.only(left: 24, right: 24, bottom: 8),
-          sliver: SliverToBoxAdapter(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Recent Voters",
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blueAccent,
-                  ),
-                ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentIndex = 3;
-                    });
-                  },
-                  child: const Text("View All"),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        // Recent voters list
-        BlocBuilder<VotersRecentBloc, VotersRecentState>(
-          builder: (context, state) {
-            if (state is VotersRecentLoading) {
-              return SliverToBoxAdapter(
-                child: Util.shimmerBox(
-                  height: 200,
-                  margin: EdgeInsets.symmetric(horizontal: 20),
-                ),
-              );
-            }
-
-            if (state is VotersRecentFailure) {
-              return const SliverFillRemaining(
-                child: Center(child: Text("Failed to load voters")),
-              );
-            }
-
-            if (state is VotersRecentSuccess) {
-              final voters = state.voters;
-              return SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final voter = voters[index];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                    child: VoterCard(voterDetails: voter),
-                  );
-                }, childCount: (voters.length <= 5 ? voters.length : 4)),
-              );
-            }
-
-            return const SliverToBoxAdapter(child: SizedBox.shrink());
-          },
-        ),
       ],
     );
   }
@@ -245,12 +179,12 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
     return ReligionWiseSection();
   }
 
-  Widget _buildAgeGroupStats() {
-    return AgeGroupStatsWidget();
+  Widget _buildVoterListView() {
+    return VotersListSection();
   }
 
-  Widget _buildVoterListView() {
-    return VotersListWidget();
+  Widget _buildAgeGroupStats() {
+    return AgeGroupStatsWidget();
   }
 
   Widget _buildVotersCensusStats() {

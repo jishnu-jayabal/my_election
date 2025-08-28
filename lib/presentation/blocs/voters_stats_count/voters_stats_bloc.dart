@@ -16,7 +16,7 @@ class VotersStatsBloc extends Bloc<VotersStatsEvent, VotersStatsState> {
     on<FetchVotersStatsEvent>((event,emit) async{
       try {
         emit(VotersStatsLoading());
-        VoterCensusStats voterCensusStats = await _apiBridge.getVoterCensusStats(
+        VoterCensusStats voterCensusStats = await _apiBridge.getVoterCensusStatsCount(
           boothId: event.boothId,
           constituencyId: event.constituencyId,
           wardId: event.wardId

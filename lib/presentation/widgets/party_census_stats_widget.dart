@@ -1,7 +1,7 @@
 import 'package:election_mantra/core/constant/palette.dart';
 import 'package:election_mantra/core/util.dart';
 import 'package:election_mantra/presentation/blocs/party_list/party_list_bloc.dart';
-import 'package:election_mantra/presentation/blocs/party_stats/party_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/party_stats_count/party_stats_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 

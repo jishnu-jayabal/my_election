@@ -1,8 +1,9 @@
 import 'package:election_mantra/api/models/filter_model.dart';
 import 'package:election_mantra/core/util.dart';
-import 'package:election_mantra/presentation/blocs/age_group_stats/age_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/age_group_stats_count/age_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/party_list/party_list_bloc.dart';
 import 'package:election_mantra/presentation/blocs/religion/religion_bloc.dart';
+import 'package:election_mantra/presentation/blocs/startup/startup_bloc.dart';
 import 'package:election_mantra/presentation/cubit/cubit/filter_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -47,76 +48,82 @@ class _FilterWidgetState extends State<FilterWidget> {
   Widget _buildFilterMode() {
     return Scaffold(
       body: SafeArea(
-        child: Container(
+        child: SingleChildScrollView(
+          // 🔑 Added scroll
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Filters',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blueAccent,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Filters',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blueAccent,
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close, size: 20),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              _buildStatusFilter(),
-              const SizedBox(height: 20),
-
-              _buildPoliticalAffiliationFilter(),
-              const SizedBox(height: 20),
-
-              _buildAgeFilter(),
-              const SizedBox(height: 20),
-
-              _buildReligionFilter(),
-              const SizedBox(height: 24),
-
-              // Action Buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  TextButton(
-                    onPressed: _clearAllFilters,
-                    child: const Text(
-                      'Clear All',
-                      style: TextStyle(color: Colors.red),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                  ),
-                  ElevatedButton(
-                    onPressed: _applyFilters,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent,
-                      foregroundColor: Colors.white,
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                _buildStatusFilter(),
+                const SizedBox(height: 20),
+
+                _buildGenderFilter(),
+                const SizedBox(height: 20),
+
+                _buildPoliticalAffiliationFilter(),
+                const SizedBox(height: 20),
+
+                _buildAgeFilter(),
+                const SizedBox(height: 20),
+
+                _buildReligionFilter(),
+                const SizedBox(height: 24),
+
+                // Action Buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: _clearAllFilters,
+                      child: const Text(
+                        'Clear All',
+                        style: TextStyle(color: Colors.red),
+                      ),
                     ),
-                    child: const Text('Apply Filters'),
-                  ),
-                ],
-              ),
-            ],
+                    ElevatedButton(
+                      onPressed: _applyFilters,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('Apply Filters'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -126,7 +133,7 @@ class _FilterWidgetState extends State<FilterWidget> {
   /// ---------------- FILTER SECTIONS ----------------
   Widget _buildStatusFilter() {
     return _buildFilterSection(
-      title: 'Voting Status',
+      title: 'Voter Status',
       filters: [
         _buildFilterChip(
           label: 'Pending',
@@ -245,6 +252,30 @@ class _FilterWidgetState extends State<FilterWidget> {
     );
   }
 
+  Widget _buildGenderFilter() {
+    return BlocBuilder<StartupBloc, StartupState>(
+      builder: (context, state) {
+        if (state is StartupSuccess) {
+          return _buildFilterSection(
+            title: 'Gender',
+            filters:
+                state.genders.map((e) {
+                  return _buildFilterChip(
+                    label: e.name,
+                    value: e.name,
+                    selected: _currentFilters.gender == e.name,
+                    onSelected:
+                        (selected) =>
+                            _updateFilter(gender: selected ? e.name : null),
+                  );
+                }).toList(),
+          );
+        }
+        return const SizedBox(height: 50, child: LinearProgressIndicator());
+      },
+    );
+  }
+
   /// ---------------- HELPER WIDGETS ----------------
   Widget _buildFilterSection({
     required String title,
@@ -302,12 +333,14 @@ class _FilterWidgetState extends State<FilterWidget> {
     String? affiliation,
     String? ageGroup,
     String? religion,
+    String? gender,
   }) {
     context.read<FilterCubit>().updateFilter(
       status: status,
       affiliation: affiliation,
       ageGroup: ageGroup,
       religion: religion,
+      gender: gender,
     );
 
     widget.onFiltersChanged(context.read<FilterCubit>().state); // notify parent

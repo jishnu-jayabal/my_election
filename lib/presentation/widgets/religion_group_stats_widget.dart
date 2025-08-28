@@ -1,5 +1,5 @@
 import 'package:election_mantra/core/util.dart';
-import 'package:election_mantra/presentation/blocs/religion_group_stats/religion_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/religion_group_stats_count/religion_group_stats_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';

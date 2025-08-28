@@ -9,11 +9,11 @@ import 'package:election_mantra/presentation/widgets/voter_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-enum VotersListWidgetMode { full, recent }
+enum VotersListSectionMode { full, recent }
 
-class VotersListWidget extends StatelessWidget {
-  final VotersListWidgetMode mode;
-  const VotersListWidget({super.key, this.mode = VotersListWidgetMode.full});
+class VotersListSection extends StatelessWidget {
+  final VotersListSectionMode mode;
+  const VotersListSection({super.key, this.mode = VotersListSectionMode.full});
 
   @override
   Widget build(BuildContext context) {
@@ -23,18 +23,26 @@ class VotersListWidget extends StatelessWidget {
         final loginState = context.read<LoginBloc>().state;
         if (loginState is LoginSuccessState) {
           context.read<VotersListBloc>().add(
-            FetchVoterListByFilterEvent(
+            //local filter decide later which to use
+            FetchVoterListByFilterEventLocal(
               boothId: loginState.user.boothNo,
               constituencyId: loginState.user.constituencyNo,
               wardId: loginState.user.wardNo,
               filter: state,
             ),
+            //Network Filter
+            // FetchVoterListByFilterEventNetwork(
+            //   boothId: loginState.user.boothNo,
+            //   constituencyId: loginState.user.constituencyNo,
+            //   wardId: loginState.user.wardNo,
+            //   filter: state,
+            // ),
           );
         }
       },
       child: CustomScrollView(
         slivers: [
-          if (mode == VotersListWidgetMode.full)
+          if (mode == VotersListSectionMode.full)
             // 🔹 Search bar (always visible)
             SliverPadding(
               padding: const EdgeInsets.all(16.0),
@@ -51,6 +59,11 @@ class VotersListWidget extends StatelessWidget {
                     ],
                   ),
                   child: TextField(
+                    onChanged: (value) {
+                      BlocProvider.of<VotersListBloc>(
+                        context,
+                      ).add(SearchVoterListEvent(searchTerm: value));
+                    },
                     decoration: InputDecoration(
                       hintText: "Search by name, voter ID, house...",
                       prefixIcon: const Icon(
@@ -67,6 +80,7 @@ class VotersListWidget extends StatelessWidget {
                         vertical: 0,
                         horizontal: 16,
                       ),
+
                       suffixIcon: IconButton(
                         onPressed: () {
                           Navigator.of(context).push(
@@ -83,7 +97,8 @@ class VotersListWidget extends StatelessWidget {
                                       BlocProvider.of<VotersListBloc>(
                                         context,
                                       ).add(
-                                        FetchVoterListByFilterEvent(
+                                        //local filter decide later which to use
+                                        FetchVoterListByFilterEventLocal(
                                           boothId:
                                               loginSuccessState.user.boothNo,
                                           constituencyId:
@@ -93,6 +108,17 @@ class VotersListWidget extends StatelessWidget {
                                           wardId: loginSuccessState.user.wardNo,
                                           filter: map,
                                         ),
+                                        //network filter
+                                        // FetchVoterListByFilterEventNetwork(
+                                        //   boothId:
+                                        //       loginSuccessState.user.boothNo,
+                                        //   constituencyId:
+                                        //       loginSuccessState
+                                        //           .user
+                                        //           .constituencyNo,
+                                        //   wardId: loginSuccessState.user.wardNo,
+                                        //   filter: map,
+                                        // ),
                                       );
                                     },
                                   ),
@@ -107,10 +133,10 @@ class VotersListWidget extends StatelessWidget {
               ),
             ),
 
-          if (mode == VotersListWidgetMode.full)
+          if (mode == VotersListSectionMode.full)
             SliverToBoxAdapter(child: AppliedFilterWidget()),
 
-          if (mode == VotersListWidgetMode.full)
+          if (mode == VotersListSectionMode.full)
             // 🔹 Voter list header (always visible)
             SliverPadding(
               padding: const EdgeInsets.only(left: 24, right: 24, bottom: 8),
@@ -176,7 +202,7 @@ class VotersListWidget extends StatelessWidget {
                       );
                     },
                     childCount:
-                        mode == VotersListWidgetMode.full
+                        mode == VotersListSectionMode.full
                             ? voters.length
                             : (voters.length <= 5 ? voters.length : 4),
                   ),

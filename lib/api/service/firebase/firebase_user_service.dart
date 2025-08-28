@@ -1,12 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:election_mantra/api/models/age_group_stats.dart';
+import 'package:election_mantra/api/models/education.dart';
 import 'package:election_mantra/api/models/filter_model.dart';
+import 'package:election_mantra/api/models/gender.dart';
 import 'package:election_mantra/api/models/party_census_stats.dart';
 import 'package:election_mantra/api/models/political_groups.dart';
 import 'package:election_mantra/api/models/religion.dart';
 import 'package:election_mantra/api/models/religion_group_stats.dart';
+import 'package:election_mantra/api/models/staying_status.dart';
 import 'package:election_mantra/api/models/user.dart';
-import 'package:election_mantra/api/models/voter.dart';
+import 'package:election_mantra/api/models/voter_details.dart';
+import 'package:election_mantra/api/models/voter_cocern.dart';
+import 'package:election_mantra/api/models/voter_type.dart';
 import 'package:election_mantra/api/models/voters_census_stats.dart';
 import 'package:election_mantra/api/repository/user_repository.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb_auth;
@@ -29,7 +34,6 @@ class FirebaseUserService implements UserRepository {
         throw Exception(e.message ?? "OTP verification failed");
       },
       codeSent: (verificationId, _) {
-        print("otp sent");
         _verificationId = verificationId;
       },
       codeAutoRetrievalTimeout: (verificationId) {
@@ -110,7 +114,8 @@ class FirebaseUserService implements UserRepository {
     int? boothId,
     int? wardId,
     int? constituencyId,
-    int? limit,
+    int? limit = 100,
+    String? searchTerm,
   }) async {
     Query query = _firestore.collection('records');
 
@@ -140,6 +145,22 @@ class FirebaseUserService implements UserRepository {
   }
 
   @override
+  Future<void> updateVoter(VoterDetails voterDetails) async {
+    try {
+      final collection = _firestore.collection('records');
+
+      if (voterDetails.id.isNotEmpty) {
+        // Update existing voter
+        await collection
+            .doc(voterDetails.id)
+            .set(voterDetails.toJson(), SetOptions(merge: true));
+      }
+    } catch (e) {
+      throw Exception("Failed to save voter details: $e");
+    }
+  }
+
+  @override
   Future<List<VoterDetails>> getVotersByFilter({
     int? boothId,
     int? wardId,
@@ -164,6 +185,11 @@ class FirebaseUserService implements UserRepository {
 
       if (filter.religion != null) {
         query = query.where('religion', isEqualTo: filter.religion);
+      }
+
+      // ✅ Gender
+      if (filter.gender != null && filter.gender!.isNotEmpty) {
+        query = query.where('gender', isEqualTo: filter.gender);
       }
 
       // Status filter - handle carefully
@@ -235,7 +261,58 @@ class FirebaseUserService implements UserRepository {
   }
 
   @override
-  Future<Map<String, PartyCensusStats>> getPartySupportPercentage({
+  Future<List<Education>> getEducation() async {
+    final snapshot = await _firestore.collection('education').get();
+
+    final groups =
+        snapshot.docs.map((doc) => Education.fromJson(doc.data())).toList();
+
+    return groups;
+  }
+
+  @override
+  Future<List<Gender>> getGender() async {
+    final snapshot = await _firestore.collection('gender').get();
+
+    final groups =
+        snapshot.docs.map((doc) => Gender.fromJson(doc.data())).toList();
+
+    return groups;
+  }
+
+  @override
+  Future<List<VoterType>> getVoterType() async {
+    final snapshot = await _firestore.collection('votetype').get();
+
+    final groups =
+        snapshot.docs.map((doc) => VoterType.fromJson(doc.data())).toList();
+
+    return groups;
+  }
+
+  @override
+  Future<List<VoterConcern>> getVoterConcern() async {
+    final snapshot = await _firestore.collection('voterconcern').get();
+
+    final groups =
+        snapshot.docs.map((doc) => VoterConcern.fromJson(doc.data())).toList();
+
+    return groups;
+  }
+
+  @override
+  Future<List<StayingStatus>> getStayingStatus() async {
+    final snapshot = await _firestore.collection('stayingstatus').get();
+
+    final groups =
+        snapshot.docs.map((doc) => StayingStatus.fromJson(doc.data())).toList();
+
+    return groups;
+  }
+
+  //Get Party Count By Voter Preference regardless whether they have voted or not
+  @override
+  Future<Map<String, PartyCensusStats>> getPartySupportCount({
     int? boothId,
     int? wardId,
     int? constituencyId,
@@ -287,7 +364,7 @@ class FirebaseUserService implements UserRepository {
 
   /// Get voters census statistics (total, completed, pending)
   @override
-  Future<VoterCensusStats> getVoterCensusStats({
+  Future<VoterCensusStats> getVoterCensusStatsCount({
     int? boothId,
     int? wardId,
     int? constituencyId,
@@ -324,8 +401,9 @@ class FirebaseUserService implements UserRepository {
     );
   }
 
+  //Get Age Count 18-25 , 26-40 etc
   @override
-  Future<List<AgeGroupStats>> getAgeGroupStats({
+  Future<List<AgeGroupStats>> getAgeGroupStatsCount({
     int? boothId,
     int? wardId,
     int? constituencyId,
@@ -426,8 +504,9 @@ class FirebaseUserService implements UserRepository {
     return stats;
   }
 
+  //Get Religion Count of voters
   @override
-  Future<List<ReligionGroupStats>> getReligionGroupStats({
+  Future<List<ReligionGroupStats>> getReligionGroupStatsCount({
     int? boothId,
     int? wardId,
     int? constituencyId,

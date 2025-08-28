@@ -1,6 +1,6 @@
 import 'package:election_mantra/core/constant/palette.dart';
-import 'package:election_mantra/presentation/blocs/age_group_stats/age_group_stats_bloc.dart';
-import 'package:election_mantra/presentation/blocs/voters_stats/voters_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/age_group_stats_count/age_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/voters_stats_count/voters_stats_bloc.dart';
 import 'package:election_mantra/presentation/widgets/age_group_stats_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';

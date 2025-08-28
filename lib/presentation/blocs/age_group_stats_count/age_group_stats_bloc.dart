@@ -16,7 +16,7 @@ class AgeGroupStatsBloc extends Bloc<AgeGroupStatsEvent, AgeGroupStatsState> {
      on<FetchAgeGroupStatsEvent>((event,emit) async{
       try {
         emit(AgeGroupStatsLoading());
-         List<AgeGroupStats> ageGroupStats = await _apiBridge.getAgeGroupStats(
+         List<AgeGroupStats> ageGroupStats = await _apiBridge.getAgeGroupStatsCount(
           boothId: event.boothId,
           constituencyId: event.constituencyId,
           wardId: event.wardId
