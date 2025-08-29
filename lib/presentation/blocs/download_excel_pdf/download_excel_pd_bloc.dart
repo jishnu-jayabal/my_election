@@ -17,9 +17,17 @@ class DownloadExcelPdBloc
         await _downloadService.downloadExcel(event.voterDetails);
         emit(DownloadExcelPdfSuccess());
       } catch (e) {
-        emit(DownloadExcelPdFailure(
-          msg: e.toString()
-        ));
+        emit(DownloadExcelPdFailure(msg: e.toString()));
+      }
+    });
+ 
+    on<DownloadPdfEvent>((event,emit) async{
+         try {
+        emit(DownloadExcelPdLoading());
+        await _downloadService.downloadPDF(event.voterDetails);
+        emit(DownloadExcelPdfSuccess());
+      } catch (e) {
+        emit(DownloadExcelPdFailure(msg: e.toString()));
       }
     });
   }

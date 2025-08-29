@@ -6,6 +6,7 @@ import 'package:election_mantra/presentation/blocs/party_stats/party_stats_bloc.
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class PartyCensusStatsWidget extends StatelessWidget {
   final Function(String) onPartyChipClicked;
@@ -69,7 +70,7 @@ class PartyCensusStatsWidget extends StatelessWidget {
             } else {
               // Card with tabs + pie chart mode
               return SliverToBoxAdapter(
-                child: _buildCardWithTabs(stats, parties,context),
+                child: _buildCardWithTabs(stats, parties, context),
               );
             }
           },
@@ -96,7 +97,7 @@ class PartyCensusStatsWidget extends StatelessWidget {
   Widget _buildCardWithTabs(
     PartyCensusStats stats,
     List<PoliticalGroups> parties,
-    BuildContext context
+    BuildContext context,
   ) {
     return SizedBox(
       height: 450, // Height enough for pie chart + chips
@@ -109,14 +110,22 @@ class PartyCensusStatsWidget extends StatelessWidget {
           ),
           child: Column(
             children: [
-               TabBar(
-                 indicatorSize: TabBarIndicatorSize.tab,
-                tabs: [Tab(child: Text(
-                  "Voted",style: Theme.of(context).textTheme.bodyLarge,
-                ),
-                ), Tab(child: Text(
-                  "Not Voted",style: Theme.of(context).textTheme.bodyLarge,
-                ),)],
+              TabBar(
+                indicatorSize: TabBarIndicatorSize.tab,
+                tabs: [
+                  Tab(
+                    child: Text(
+                      "Voted",
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
+                  Tab(
+                    child: Text(
+                      "Not Voted",
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  ),
+                ],
                 labelColor: Colors.black,
                 indicatorColor: Colors.blue,
               ),
@@ -160,9 +169,29 @@ class PartyCensusStatsWidget extends StatelessWidget {
       }
     }
 
+    if (pieSections.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            FaIcon(FontAwesomeIcons.chartPie, size: 180, color: Colors.grey),
+            SizedBox(height: 8),
+            Text(
+              "No data available",
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Column(
       children: [
-        SizedBox(height: 30,),
+        SizedBox(height: 30),
         Expanded(
           child: PieChart(
             PieChartData(

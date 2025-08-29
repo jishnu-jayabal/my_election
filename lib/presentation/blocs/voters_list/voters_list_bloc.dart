@@ -138,6 +138,15 @@ class VotersListBloc extends Bloc<VotersListEvent, VotersListState> {
                 }
               }
 
+              /// ✅ new voted filter
+              if (event.filter.voted != null) {
+                if (event.filter.voted == "voted") {
+                  matches &= v.voted == true;
+                } else if (event.filter.voted == "not voted") {
+                  matches &= v.voted == false;
+                }
+              }
+
               return matches;
             }).toList();
 

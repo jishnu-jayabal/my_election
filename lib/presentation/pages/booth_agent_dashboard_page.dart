@@ -207,7 +207,7 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
             ],
           );
         }
-        return Util.shimmerBox(height: 10);
+        return Center(child: Util.shimmerCircle());
       },
     );
   }

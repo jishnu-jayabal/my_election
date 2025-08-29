@@ -9,3 +9,10 @@ class DownloadExcelEvent extends DownloadExcelPdEvent {
     required this.voterDetails
   });
 }
+
+class DownloadPdfEvent extends DownloadExcelPdEvent {
+  final List<VoterDetails> voterDetails;
+  DownloadPdfEvent({
+    required this.voterDetails
+  });
+}

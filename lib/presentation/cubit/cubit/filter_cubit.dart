@@ -32,6 +32,7 @@ class FilterCubit extends Cubit<FilterState> {
 
   void updateTemporaryFilter({
     String? status,
+    String? voted,
     String? affiliation,
     String? ageGroup,
     String? religion,
@@ -41,6 +42,7 @@ class FilterCubit extends Cubit<FilterState> {
       state.copyWith(
         temporaryFilters: state.temporaryFilters.copyWith(
           status: status ?? state.temporaryFilters.status,
+          voted: voted ?? state.temporaryFilters.voted,
           affiliation: affiliation ?? state.temporaryFilters.affiliation,
           ageGroup: ageGroup ?? state.temporaryFilters.ageGroup,
           religion: religion ?? state.temporaryFilters.religion,
@@ -78,6 +80,8 @@ class FilterCubit extends Cubit<FilterState> {
     switch (filterType) {
       case FilterType.status:
         return filters.copyWith(status: null);
+      case FilterType.voted:
+        return filters.copyWith(voted: null);
       case FilterType.affiliation:
         return filters.copyWith(affiliation: null);
       case FilterType.ageGroup:
@@ -105,4 +109,4 @@ class FilterCubit extends Cubit<FilterState> {
   FilterModel get currentTemporaryFilters => state.temporaryFilters;
 }
 
-enum FilterType { status, affiliation, ageGroup, religion, gender }
+enum FilterType { status, voted, affiliation, ageGroup, religion, gender }

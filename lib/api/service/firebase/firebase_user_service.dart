@@ -192,6 +192,14 @@ class FirebaseUserService implements UserRepository {
         query = query.where('gender', isEqualTo: filter.gender);
       }
 
+      if (filter.voted != null) {
+        if (filter.voted == 'voted') {
+          query = query.where('voted', isEqualTo: true);
+        } else if (filter.voted == 'not voted') {
+          query = query.where('voted', isEqualTo: false);
+        }
+      }
+
       // Status filter - handle carefully
       if (filter.status != null) {
         if (filter.status == 'completed') {
@@ -334,7 +342,6 @@ class FirebaseUserService implements UserRepository {
     final total = totalSnap.count;
 
     if (total == 0) return PartyCensusStats(total: {}, voted: {}, notVoted: {});
-
 
     final allParties = await getPoliticalGroups();
 

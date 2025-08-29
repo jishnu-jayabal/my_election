@@ -108,7 +108,9 @@ class _FilterWidgetState extends State<FilterWidget> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                _buildStatusFilter(currentFilters),
+                _buildDetailsFilter(currentFilters),
+                const SizedBox(height: 20),
+                _buildVotingStatusFilter(currentFilters),
                 const SizedBox(height: 20),
                 _buildGenderFilter(currentFilters),
                 const SizedBox(height: 20),
@@ -127,9 +129,9 @@ class _FilterWidgetState extends State<FilterWidget> {
   }
 
   /// ---------------- FILTER SECTIONS ----------------
-  Widget _buildStatusFilter(FilterModel currentFilters) {
+  Widget _buildDetailsFilter(FilterModel currentFilters) {
     return _buildFilterSection(
-      title: 'Voter Status',
+      title: 'Details Status',
       filters: [
         _buildFilterChip(
           label: 'Pending',
@@ -145,6 +147,28 @@ class _FilterWidgetState extends State<FilterWidget> {
           onSelected:
               (selected) =>
                   _updateFilter(status: selected ? 'completed' : null),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVotingStatusFilter(FilterModel currentFilters) {
+    return _buildFilterSection(
+      title: 'Voting Status',
+      filters: [
+        _buildFilterChip(
+          label: 'Voted',
+          value: 'voted',
+          selected: currentFilters.voted == 'voted',
+          onSelected:
+              (selected) => _updateFilter(voted: selected ? 'voted' : null),
+        ),
+        _buildFilterChip(
+          label: 'Not Voted',
+          value: 'not voted',
+          selected: currentFilters.voted == 'not voted',
+          onSelected:
+              (selected) => _updateFilter(voted: selected ? 'not voted' : null),
         ),
       ],
     );
@@ -326,6 +350,7 @@ class _FilterWidgetState extends State<FilterWidget> {
 
   void _updateFilter({
     String? status,
+    String? voted,
     String? affiliation,
     String? ageGroup,
     String? religion,
@@ -333,6 +358,7 @@ class _FilterWidgetState extends State<FilterWidget> {
   }) {
     context.read<FilterCubit>().updateTemporaryFilter(
       status: status,
+      voted: voted,
       affiliation: affiliation,
       ageGroup: ageGroup,
       religion: religion,

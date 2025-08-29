@@ -91,7 +91,9 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.white,
+                          ),
                         ),
                       ),
                     ),
@@ -123,6 +125,21 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
       builder: (BuildContext context) {
         return BlocBuilder<DownloadExcelPdBloc, DownloadExcelPdState>(
           builder: (context, state) {
+            if (state is DownloadExcelPdLoading) {
+              return Container(
+                height: 100,
+                width: MediaQuery.of(context).size.width,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    Text('Downloading...'),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              );
+            }
             return Container(
               padding: const EdgeInsets.all(20),
               child: Column(
@@ -137,42 +154,32 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  
-                  if (state is DownloadExcelPdLoading)
-                    Column(
-                      children: [
-                        CircularProgressIndicator(),
-                        const SizedBox(height: 16),
-                        Text('Downloading...'),
-                        const SizedBox(height: 20),
-                      ],
-                    )
-                  else
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildDownloadOption(
-                          context,
-                          icon: Icons.table_chart,
-                          title: 'Excel',
-                          onTap: () {
-                            Navigator.pop(context);
-                            _downloadExcel(context);
-                          },
-                          color: Colors.green,
-                        ),
-                        _buildDownloadOption(
-                          context,
-                          icon: Icons.picture_as_pdf,
-                          title: 'PDF',
-                          onTap: () {
-                            Navigator.pop(context);
-                            _downloadPdf(context);
-                          },
-                          color: Colors.red,
-                        ),
-                      ],
-                    ),
+
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildDownloadOption(
+                        context,
+                        icon: Icons.table_chart,
+                        title: 'Excel',
+                        onTap: () {
+                          Navigator.pop(context);
+                          _downloadExcel(context);
+                        },
+                        color: Colors.green,
+                      ),
+                      _buildDownloadOption(
+                        context,
+                        icon: Icons.picture_as_pdf,
+                        title: 'PDF',
+                        onTap: () {
+                          Navigator.pop(context);
+                          _downloadPdf(context);
+                        },
+                        color: Colors.red,
+                      ),
+                    ],
+                  ),
                 ],
               ),
             );
@@ -201,19 +208,12 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
               shape: BoxShape.circle,
               border: Border.all(color: color, width: 2),
             ),
-            child: Icon(
-              icon,
-              size: 30,
-              color: color,
-            ),
+            child: Icon(icon, size: 30, color: color),
           ),
           const SizedBox(height: 8),
           Text(
             title,
-            style: TextStyle(
-              fontWeight: FontWeight.w500,
-              color: color,
-            ),
+            style: TextStyle(fontWeight: FontWeight.w500, color: color),
           ),
         ],
       ),
@@ -224,9 +224,9 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
     if (BlocProvider.of<VotersListBloc>(context).state is VotersListSuccess) {
       VotersListSuccess votersListSuccess =
           BlocProvider.of<VotersListBloc>(context).state as VotersListSuccess;
-      BlocProvider.of<DownloadExcelPdBloc>(context).add(
-        DownloadExcelEvent(voterDetails: votersListSuccess.voters),
-      );
+      BlocProvider.of<DownloadExcelPdBloc>(
+        context,
+      ).add(DownloadExcelEvent(voterDetails: votersListSuccess.voters));
     }
   }
 
@@ -234,16 +234,9 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
     if (BlocProvider.of<VotersListBloc>(context).state is VotersListSuccess) {
       VotersListSuccess votersListSuccess =
           BlocProvider.of<VotersListBloc>(context).state as VotersListSuccess;
-      BlocProvider.of<DownloadExcelPdBloc>(context).add(
-        DownloadExcelEvent(voterDetails: votersListSuccess.voters),
-      );
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('PDF download feature coming soon!'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      BlocProvider.of<DownloadExcelPdBloc>(
+        context,
+      ).add(DownloadPdfEvent(voterDetails: votersListSuccess.voters));
     }
   }
 
