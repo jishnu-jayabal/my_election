@@ -5,110 +5,79 @@ import 'package:open_file/open_file.dart';
 import 'package:election_mantra/api/models/voter_details.dart';
 
 class DownloadService {
-  /// Downloads voter data as Excel file
-   Future<void> downloadExcel(List<VoterDetails> voters) async {
+  static const Map<String, String> _propertyDisplayNames = {
+    'serialNo': 'Serial No',
+    'name': 'Name',
+    'guardianName': 'Guardian Name',
+    'houseName': 'House Name',
+    'gender': 'Gender',
+    'age': 'Age',
+    'voterId': 'Voter ID',
+    'pollingStation': 'Polling Station',
+    'religion': 'Religion',
+    'caste': 'Caste',
+    'voteType': 'Vote Type',
+    'isSureVote': 'Is Sure Vote',
+    'isStayingOutside': 'Is Staying Outside',
+    'stayingLocation': 'Staying Location',
+    'stayingStatus': 'Staying Status',
+    'influencer': 'Influencer',
+    'education': 'Education',
+    'occupation': 'Occupation',
+    'mobileNo': 'Mobile No',
+    'state': 'State',
+    'district': 'District',
+    'block': 'Block',
+    'panchayath': 'Panchayath',
+    'assembly': 'Assembly',
+    'locBodyType': 'Local Body Type',
+    'party': 'Party',
+    'voterConcern': 'Voter Concern',
+    'voted': 'Voted',
+    'bhagNo': 'Bhag No',
+    'createdAt': 'Created At',
+    'updatedAt': 'Updated At',
+    'updatedBy': 'Updated By',
+  };
+
+  /// Downloads voter data as Excel file to Downloads folder
+   Future<File> downloadExcel(List<VoterDetails> voters, {String? fileName}) async {
     if (voters.isEmpty) {
       throw Exception('No voters data to export');
     }
 
     try {
-      // Create Excel workbook and sheet
       final excel = Excel.createExcel();
       final sheet = excel['Voters'];
 
-      // Create header row using VoterDetails property names
-      sheet.appendRow([
-        'Serial No',
-        'Name',
-        'Guardian Name',
-        'House Name',
-        'Gender',
-        'Age',
-        'Voter ID',
-        'Polling Station',
-        'Religion',
-        'Caste',
-        'Vote Type',
-        'Is Sure Vote',
-        'Is Staying Outside',
-        'Staying Location',
-        'Staying Status',
-        'Influencer',
-        'Education',
-        'Occupation',
-        'Mobile No',
-        'State',
-        'District',
-        'Block',
-        'Panchayath',
-        'Assembly',
-        'Local Body Type',
-        'Party',
-        'Voter Concern',
-        'Voted',
-        'Bhag No',
-        'Created At',
-        'Updated At',
-        'Updated By',
-      ]);
+      // Get headers from property map
+      final headers = _getHeaders();
+      sheet.appendRow(headers);
 
       // Add data rows
       for (var voter in voters) {
-        sheet.appendRow([
-          voter.serialNo,
-          voter.name,
-          voter.guardianName,
-          voter.houseName,
-          voter.gender,
-          voter.age,
-          voter.voterId,
-          voter.pollingStation,
-          voter.religion,
-          voter.caste,
-          voter.voteType,
-          voter.isSureVote ? 'Yes' : 'No',
-          voter.isStayingOutside ? 'Yes' : 'No',
-          voter.stayingLocation,
-          voter.stayingStatus,
-          voter.influencer,
-          voter.education,
-          voter.occupation,
-          voter.mobileNo,
-          voter.state,
-          voter.district,
-          voter.block,
-          voter.panchayath,
-          voter.assembly,
-          voter.locBodyType,
-          voter.party,
-          voter.voterConcern,
-          voter.voted ? 'Yes' : 'No',
-          voter.bhagNo,
-          voter.createdAt.toString(),
-          voter.updatedAt?.toString() ?? '',
-          voter.updatedBy ?? '',
-        ]);
+        final rowData = _getVoterRowData(voter);
+        sheet.appendRow(rowData);
       }
 
-      // Encode Excel to bytes
       final bytes = excel.encode();
       if (bytes == null) {
         throw Exception('Failed to encode Excel file');
       }
 
-      // Get directory for saving
-      final directory = await _getSaveDirectory();
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final filePath = '${directory.path}/voters_export_$timestamp.xlsx';
+      // Get Downloads directory
+      final directory = await _getDownloadsDirectory();
       
-      // Save file
+      // Create filename with timestamp
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final finalFileName = fileName ?? 'voters_export_$timestamp.xlsx';
+      final filePath = '${directory.path}/$finalFileName';
+      
       final file = File(filePath);
       await file.writeAsBytes(bytes);
 
-      // Open the file
-      await OpenFile.open(filePath);
-
       print('Excel file saved at: $filePath');
+      return file;
 
     } catch (e) {
       print('Error exporting Excel: $e');
@@ -116,130 +85,112 @@ class DownloadService {
     }
   }
 
-  /// Helper method to get the best directory for saving files
-  static Future<Directory> _getSaveDirectory() async {
-    try {
-      // Try external storage first (for downloads folder)
-      final externalDir = await getExternalStorageDirectory();
-      if (externalDir != null) {
-        final downloadsDir = Directory('${externalDir.path}/Download');
-        if (await downloadsDir.exists()) {
-          return downloadsDir;
-        } else {
-          await downloadsDir.create(recursive: true);
+  /// Get the Downloads directory for Android
+  static Future<Directory> _getDownloadsDirectory() async {
+    if (Platform.isAndroid) {
+      try {
+        // For Android, use the Downloads directory
+        final directory = await getExternalStorageDirectory();
+        if (directory != null) {
+          final downloadsDir = Directory('${directory.path}/Download');
+          if (!await downloadsDir.exists()) {
+            await downloadsDir.create(recursive: true);
+          }
           return downloadsDir;
         }
+      } catch (e) {
+        print('Failed to access Downloads directory: $e');
+        // Fallback to external storage
+        final externalDir = await getExternalStorageDirectory();
+        if (externalDir != null) {
+          return externalDir;
+        }
       }
-    } catch (e) {
-      print('External storage access failed: $e');
     }
-
+    
+    // For iOS or fallback, use documents directory
     try {
-      // Fallback to application documents directory
       return await getApplicationDocumentsDirectory();
     } catch (e) {
-      print('Application documents access failed: $e');
-      
-      // Final fallback to temporary directory
       return await getTemporaryDirectory();
     }
   }
 
-  /// Alternative method that returns the file path for custom handling
-  static Future<String> exportToExcel(List<VoterDetails> voters) async {
-    if (voters.isEmpty) {
-      throw Exception('No voters data to export');
+  /// Get headers from property map
+  static List<String> _getHeaders() {
+    return _propertyDisplayNames.values.toList();
+  }
+
+  /// Get row data for a voter
+  static List<dynamic> _getVoterRowData(VoterDetails voter) {
+    return [
+      voter.serialNo,
+      voter.name,
+      voter.guardianName,
+      voter.houseName,
+      voter.gender,
+      voter.age,
+      voter.voterId,
+      voter.pollingStation,
+      voter.religion,
+      voter.caste,
+      voter.voteType,
+      voter.isSureVote ? 'Yes' : 'No',
+      voter.isStayingOutside ? 'Yes' : 'No',
+      voter.stayingLocation,
+      voter.stayingStatus,
+      voter.influencer,
+      voter.education,
+      voter.occupation,
+      voter.mobileNo,
+      voter.state,
+      voter.district,
+      voter.block,
+      voter.panchayath,
+      voter.assembly,
+      voter.locBodyType,
+      voter.party,
+      voter.voterConcern,
+      voter.voted ? 'Yes' : 'No',
+      voter.bhagNo,
+      voter.createdAt.toString(),
+      voter.updatedAt?.toString() ?? '',
+      voter.updatedBy ?? '',
+    ];
+  }
+
+  /// Open the downloaded file
+  static Future<void> openDownloadedFile(File file) async {
+    try {
+      await OpenFile.open(file.path);
+    } catch (e) {
+      print('Failed to open file: $e');
+      throw Exception('Failed to open file: $e');
     }
+  }
 
-    final excel = Excel.createExcel();
-    final sheet = excel['Voters'];
-
-    // Header row
-    sheet.appendRow([
-      'Serial No',
-      'Name',
-      'Guardian Name',
-      'House Name',
-      'Gender',
-      'Age',
-      'Voter ID',
-      'Polling Station',
-      'Religion',
-      'Caste',
-      'Vote Type',
-      'Is Sure Vote',
-      'Is Staying Outside',
-      'Staying Location',
-      'Staying Status',
-      'Influencer',
-      'Education',
-      'Occupation',
-      'Mobile No',
-      'State',
-      'District',
-      'Block',
-      'Panchayath',
-      'Assembly',
-      'Local Body Type',
-      'Party',
-      'Voter Concern',
-      'Voted',
-      'Bhag No',
-      'Created At',
-      'Updated At',
-      'Updated By',
-    ]);
-
-    // Data rows
-    for (var voter in voters) {
-      sheet.appendRow([
-        voter.serialNo,
-        voter.name,
-        voter.guardianName,
-        voter.houseName,
-        voter.gender,
-        voter.age,
-        voter.voterId,
-        voter.pollingStation,
-        voter.religion,
-        voter.caste,
-        voter.voteType,
-        voter.isSureVote ? 'Yes' : 'No',
-        voter.isStayingOutside ? 'Yes' : 'No',
-        voter.stayingLocation,
-        voter.stayingStatus,
-        voter.influencer,
-        voter.education,
-        voter.occupation,
-        voter.mobileNo,
-        voter.state,
-        voter.district,
-        voter.block,
-        voter.panchayath,
-        voter.assembly,
-        voter.locBodyType,
-        voter.party,
-        voter.voterConcern,
-        voter.voted ? 'Yes' : 'No',
-        voter.bhagNo,
-        voter.createdAt.toString(),
-        voter.updatedAt?.toString() ?? '',
-        voter.updatedBy ?? '',
-      ]);
+  /// Check if a file exists in Downloads
+  static Future<bool> fileExistsInDownloads(String fileName) async {
+    try {
+      final directory = await _getDownloadsDirectory();
+      final file = File('${directory.path}/$fileName');
+      return await file.exists();
+    } catch (e) {
+      return false;
     }
+  }
 
-    final bytes = excel.encode();
-    if (bytes == null) {
-      throw Exception('Failed to encode Excel file');
+  /// Get list of exported files in Downloads
+  static Future<List<File>> getExportedFiles() async {
+    try {
+      final directory = await _getDownloadsDirectory();
+      final files = await directory.list().where((entity) {
+        return entity is File && entity.path.endsWith('.xlsx');
+      }).toList();
+      
+      return files.cast<File>();
+    } catch (e) {
+      return [];
     }
-
-    final directory = await _getSaveDirectory();
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final filePath = '${directory.path}/voters_export_$timestamp.xlsx';
-    
-    final file = File(filePath);
-    await file.writeAsBytes(bytes);
-
-    return filePath;
   }
 }

@@ -12,16 +12,39 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<LoginBloc, LoginState>(
-      listener: (context, state) {
-        if (state is LoginInitial) {
-          Navigator.pushNamedAndRemoveUntil(
-            context,
-            AppRoutes.login,
-            (route) => false,
-          );
-        }
-      },
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<LoginBloc, LoginState>(
+          listener: (context, state) {
+            if (state is LoginInitial) {
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppRoutes.login,
+                (route) => false,
+              );
+            }
+          },
+        ),
+        BlocListener<DownloadExcelPdBloc, DownloadExcelPdState>(
+          listener: (context, state) {
+            if (state is DownloadExcelPdfSuccess) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Download completed successfully!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            } else if (state is DownloadExcelPdFailure) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Download failed: ${state.msg}'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          },
+        ),
+      ],
       child: AppBar(
         foregroundColor: Palette.white,
         title: BlocBuilder<LoginBloc, LoginState>(
@@ -29,7 +52,6 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
             if (state is LoginSuccessState) {
               return Row(
                 children: [
-                  // Booth icon and number on the right
                   Expanded(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.start,
@@ -46,8 +68,6 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
                       ],
                     ),
                   ),
-
-                  // Constituency in the center
                 ],
               );
             }
@@ -57,28 +77,176 @@ class Header extends StatelessWidget implements PreferredSizeWidget {
         backgroundColor: Palette.primary,
         centerTitle: false,
         elevation: 4,
-        // shape: const RoundedRectangleBorder(
-        //   borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
-        // ),
         actions: [
-          if(showDownloadButton)
-          IconButton(
-            onPressed: () {
-              VotersListSuccess votersListSuccess = BlocProvider.of<VotersListBloc>(context).state as VotersListSuccess;
-              BlocProvider.of<DownloadExcelPdBloc>(context).add(DownloadExcelEvent(voterDetails: votersListSuccess.voters));
-            },
-            icon: Icon(
-              Icons.download,
-              color: Colors.white.withOpacity(0.9),
+          if (showDownloadButton)
+            BlocBuilder<DownloadExcelPdBloc, DownloadExcelPdState>(
+              builder: (context, state) {
+                if (state is DownloadExcelPdLoading) {
+                  // Show progress indicator when downloading
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ),
+                    ),
+                  );
+                } else {
+                  // Show download button when not loading
+                  return IconButton(
+                    onPressed: () {
+                      _showDownloadOptions(context);
+                    },
+                    icon: Icon(
+                      Icons.download,
+                      color: Colors.white.withOpacity(0.9),
+                    ),
+                    tooltip: "Download Data",
+                  );
+                }
+              },
             ),
-            tooltip: "Download Data",
-          ),
-
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
         ],
       ),
     );
   }
+
+  void _showDownloadOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return BlocBuilder<DownloadExcelPdBloc, DownloadExcelPdState>(
+          builder: (context, state) {
+            return Container(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Download Options',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue[700],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  if (state is DownloadExcelPdLoading)
+                    Column(
+                      children: [
+                        CircularProgressIndicator(),
+                        const SizedBox(height: 16),
+                        Text('Downloading...'),
+                        const SizedBox(height: 20),
+                      ],
+                    )
+                  else
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildDownloadOption(
+                          context,
+                          icon: Icons.table_chart,
+                          title: 'Excel',
+                          onTap: () {
+                            Navigator.pop(context);
+                            _downloadExcel(context);
+                          },
+                          color: Colors.green,
+                        ),
+                        _buildDownloadOption(
+                          context,
+                          icon: Icons.picture_as_pdf,
+                          title: 'PDF',
+                          onTap: () {
+                            Navigator.pop(context);
+                            _downloadPdf(context);
+                          },
+                          color: Colors.red,
+                        ),
+                      ],
+                    ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildDownloadOption(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+    required Color color,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        children: [
+          Container(
+            width: 60,
+            height: 60,
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
+              border: Border.all(color: color, width: 2),
+            ),
+            child: Icon(
+              icon,
+              size: 30,
+              color: color,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _downloadExcel(BuildContext context) {
+    if (BlocProvider.of<VotersListBloc>(context).state is VotersListSuccess) {
+      VotersListSuccess votersListSuccess =
+          BlocProvider.of<VotersListBloc>(context).state as VotersListSuccess;
+      BlocProvider.of<DownloadExcelPdBloc>(context).add(
+        DownloadExcelEvent(voterDetails: votersListSuccess.voters),
+      );
+    }
+  }
+
+  void _downloadPdf(BuildContext context) {
+    if (BlocProvider.of<VotersListBloc>(context).state is VotersListSuccess) {
+      VotersListSuccess votersListSuccess =
+          BlocProvider.of<VotersListBloc>(context).state as VotersListSuccess;
+      BlocProvider.of<DownloadExcelPdBloc>(context).add(
+        DownloadExcelEvent(voterDetails: votersListSuccess.voters),
+      );
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('PDF download feature coming soon!'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
+
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }

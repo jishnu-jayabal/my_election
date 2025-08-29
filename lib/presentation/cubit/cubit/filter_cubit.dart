@@ -1,10 +1,36 @@
 import 'package:bloc/bloc.dart';
 import 'package:election_mantra/api/models/filter_model.dart';
+// filter_state.dart
+import 'package:election_mantra/api/models/filter_model.dart';
 
-class FilterCubit extends Cubit<FilterModel> {
-  FilterCubit() : super(FilterModel.initial());
+class FilterState {
+  final FilterModel temporaryFilters;
+  final FilterModel appliedFilters;
 
-  void updateFilter({
+  FilterState({required this.temporaryFilters, required this.appliedFilters});
+
+  factory FilterState.initial() {
+    return FilterState(
+      temporaryFilters: FilterModel.initial(),
+      appliedFilters: FilterModel.initial(),
+    );
+  }
+
+  FilterState copyWith({
+    FilterModel? temporaryFilters,
+    FilterModel? appliedFilters,
+  }) {
+    return FilterState(
+      temporaryFilters: temporaryFilters ?? this.temporaryFilters,
+      appliedFilters: appliedFilters ?? this.appliedFilters,
+    );
+  }
+} // Import the new state
+
+class FilterCubit extends Cubit<FilterState> {
+  FilterCubit() : super(FilterState.initial());
+
+  void updateTemporaryFilter({
     String? status,
     String? affiliation,
     String? ageGroup,
@@ -13,63 +39,70 @@ class FilterCubit extends Cubit<FilterModel> {
   }) {
     emit(
       state.copyWith(
-        status: status ?? state.status,
-        affiliation: affiliation ?? state.affiliation,
-        ageGroup: ageGroup ?? state.ageGroup,
-        religion: religion ?? state.religion,
-        gender: gender ?? state.gender,
+        temporaryFilters: state.temporaryFilters.copyWith(
+          status: status ?? state.temporaryFilters.status,
+          affiliation: affiliation ?? state.temporaryFilters.affiliation,
+          ageGroup: ageGroup ?? state.temporaryFilters.ageGroup,
+          religion: religion ?? state.temporaryFilters.religion,
+          gender: gender ?? state.temporaryFilters.gender,
+        ),
       ),
     );
   }
 
-  void resetAll() => emit(FilterModel.initial());
-  void updateStatus(String? status) {
-    emit(state.copyWith(status: status));
+  void applyTemporaryFilters() {
+    emit(state.copyWith(appliedFilters: state.temporaryFilters));
   }
 
-  void updateAffiliation(String? affiliation) {
-    emit(state.copyWith(affiliation: affiliation));
+  void resetTemporaryFilters() {
+    emit(state.copyWith(temporaryFilters: FilterModel.initial()));
   }
 
-  void updateAgeGroup(String? ageGroup) {
-    emit(state.copyWith(ageGroup: ageGroup));
+  void resetAll() => emit(FilterState.initial());
+
+  void clearTemporaryFilter(FilterType filterType) {
+    final updatedTemporary = _clearFilter(state.temporaryFilters, filterType);
+    emit(state.copyWith(temporaryFilters: updatedTemporary));
   }
 
-  void updateReligion(String? religion) {
-    emit(state.copyWith(religion: religion));
+  void clearAppliedFilter(FilterType filterType) {
+    final updatedApplied = _clearFilter(state.appliedFilters, filterType);
+    emit(state.copyWith(appliedFilters: updatedApplied));
   }
 
-  void updateGender(String? gender) {
-    emit(state.copyWith(gender: gender));
+  void clearAllAppliedFilters() {
+    emit(state.copyWith(appliedFilters: FilterModel.initial()));
   }
 
-  void clearAllFilters() {
-    emit(FilterModel.initial());
-  }
-
-  void clearFilter(FilterType filterType) {
+  FilterModel _clearFilter(FilterModel filters, FilterType filterType) {
     switch (filterType) {
       case FilterType.status:
-        emit(state.copyWith(status: null));
-        break;
+        return filters.copyWith(status: null);
       case FilterType.affiliation:
-        emit(state.copyWith(affiliation: null));
-        break;
+        return filters.copyWith(affiliation: null);
       case FilterType.ageGroup:
-        emit(state.copyWith(ageGroup: null));
-        break;
+        return filters.copyWith(ageGroup: null);
       case FilterType.religion:
-        emit(state.copyWith(religion: null));
-        break;
+        return filters.copyWith(religion: null);
       case FilterType.gender:
-        emit(state.copyWith(gender: null));
-        break;
+        return filters.copyWith(gender: null);
     }
   }
 
-  bool get hasActiveFilters => state.hasActiveFilters;
+  // In your FilterCubit, add this method:
+  void updateAffiliation(String? affiliation) {
+    emit(
+      state.copyWith(
+        temporaryFilters: state.temporaryFilters.copyWith(
+          affiliation: affiliation,
+        ),
+      ),
+    );
+  }
 
-  FilterModel get currentFilters => state;
+  bool get hasActiveAppliedFilters => state.appliedFilters.hasActiveFilters;
+  FilterModel get currentAppliedFilters => state.appliedFilters;
+  FilterModel get currentTemporaryFilters => state.temporaryFilters;
 }
 
-enum FilterType { status, affiliation, ageGroup, religion , gender }
+enum FilterType { status, affiliation, ageGroup, religion, gender }

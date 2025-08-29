@@ -1,3 +1,4 @@
+import 'package:election_mantra/api/models/filter_model.dart';
 import 'package:election_mantra/core/util.dart';
 import 'package:election_mantra/presentation/blocs/age_group_stats/age_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/house_list/house_list_bloc.dart';
@@ -250,22 +251,22 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
   Widget _buildVotersCensusStats() {
     return VotersCensusStatsWidget(
       onPendingClicked: () {
-        BlocProvider.of<FilterCubit>(context).updateStatus("pending");
-        setState(() {
-          _currentIndex = 3;
-        });
+        _navigateToVoterListWithFilter(
+          context,
+          (cubit) => cubit.updateTemporaryFilter(status: "pending"),
+        );
       },
       onCompletedClicked: () {
-        BlocProvider.of<FilterCubit>(context).updateStatus("completed");
-        setState(() {
-          _currentIndex = 3;
-        });
+        _navigateToVoterListWithFilter(
+          context,
+          (cubit) => cubit.updateTemporaryFilter(status: "completed"),
+        );
       },
       onTotalVoterClicked: () {
-        BlocProvider.of<FilterCubit>(context).updateStatus("");
-        setState(() {
-          _currentIndex = 3;
-        });
+        _navigateToVoterListWithFilter(
+          context,
+          (cubit) => cubit.updateTemporaryFilter(status: null),
+        );
       },
     );
   }
@@ -273,11 +274,46 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
   Widget _buildPartyCensusStatus() {
     return PartyCensusStatsWidget(
       onPartyChipClicked: (partyName) {
-        BlocProvider.of<FilterCubit>(context).updateAffiliation(partyName);
-        setState(() {
-          _currentIndex = 3;
-        });
+        _navigateToVoterListWithFilter(
+          context,
+          (cubit) => cubit.updateTemporaryFilter(affiliation: partyName),
+        );
       },
+    );
+  }
+
+  void _navigateToVoterListWithFilter(
+    BuildContext context,
+    void Function(FilterCubit) updateFilterCallback,
+  ) {
+    final cubit = context.read<FilterCubit>();
+
+    // First reset temporary filters to initial state
+    cubit.resetTemporaryFilters();
+
+    // Then update with the new specific filter
+    updateFilterCallback(cubit);
+
+    // Apply the filters immediately
+    cubit.applyTemporaryFilters();
+
+    // Navigate to voter list
+    setState(() {
+      _currentIndex = 3;
+    });
+
+    // Trigger voter list reload with the new filters
+    final appliedFilters = cubit.currentAppliedFilters;
+    final loginSuccessState =
+        context.read<LoginBloc>().state as LoginSuccessState;
+
+    context.read<VotersListBloc>().add(
+      FetchVoterListByFilterEventLocal(
+        boothId: loginSuccessState.user.boothNo,
+        constituencyId: loginSuccessState.user.constituencyNo,
+        wardId: loginSuccessState.user.wardNo,
+        filter: appliedFilters,
+      ),
     );
   }
 
@@ -285,6 +321,23 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
     return BottomNavigationBar(
       currentIndex: _currentIndex,
       onTap: (index) {
+        if (index == 3) {
+          // Clear all filters when navigating to Voter List
+          context.read<FilterCubit>().clearAllAppliedFilters();
+
+          // Reload voter list without filters
+          final loginSuccessState =
+              context.read<LoginBloc>().state as LoginSuccessState;
+          context.read<VotersListBloc>().add(
+            FetchVoterListByFilterEventLocal(
+              boothId: loginSuccessState.user.boothNo,
+              constituencyId: loginSuccessState.user.constituencyNo,
+              wardId: loginSuccessState.user.wardNo,
+              filter: FilterModel.initial(), // Empty filters
+            ),
+          );
+        }
+
         setState(() {
           _currentIndex = index;
         });

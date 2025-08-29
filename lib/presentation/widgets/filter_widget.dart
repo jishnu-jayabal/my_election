@@ -19,32 +19,35 @@ class FilterWidget extends StatefulWidget {
 }
 
 class _FilterWidgetState extends State<FilterWidget> {
-  late FilterModel _currentFilters;
-
   @override
   void initState() {
     super.initState();
-    _currentFilters = context.read<FilterCubit>().state;
+    // Always initialize temporary filters with current applied filters
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentApplied = context.read<FilterCubit>().currentAppliedFilters;
+      context.read<FilterCubit>().emit(
+        FilterState(
+          temporaryFilters: currentApplied,
+          appliedFilters: currentApplied,
+        ),
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<FilterCubit, FilterModel>(
-      listener: (context, state) {
-        setState(() {
-          _currentFilters = state;
-        });
+    return BlocBuilder<FilterCubit, FilterState>(
+      builder: (context, state) {
+        return _buildFilterMode(state.temporaryFilters);
       },
-      child: _buildFilterMode(),
     );
   }
 
-  /// ---------------- FILTER MODE ----------------
-  Widget _buildFilterMode() {
+  Widget _buildFilterMode(FilterModel currentFilters) {
     return Scaffold(
       bottomNavigationBar: SafeArea(
         child: Container(
-          padding: EdgeInsets.all(5),
+          padding: const EdgeInsets.all(5),
           color: Colors.grey[200],
           child: Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -60,9 +63,9 @@ class _FilterWidgetState extends State<FilterWidget> {
                   style: TextStyle(color: Colors.white),
                 ),
               ),
-              SizedBox(width: 20),
+              const SizedBox(width: 20),
               ElevatedButton(
-                onPressed: _applyFilters,
+                onPressed: () => _applyFilters(),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blueAccent,
                   foregroundColor: Colors.white,
@@ -74,20 +77,22 @@ class _FilterWidgetState extends State<FilterWidget> {
         ),
       ),
       appBar: AppBar(
-        leading: SizedBox.shrink(),
+        leading: const SizedBox.shrink(),
         leadingWidth: 1,
-        title: Text("Filters"),
+        title: const Text("Filters"),
         actions: [
-          IconButton(onPressed: (){
-            Navigator.pop(context);
-          }, icon: Icon(Icons.close))
+          IconButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            icon: const Icon(Icons.close),
+          ),
         ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          // 🔑 Added scroll
           child: Container(
-            padding: EdgeInsets.all(15),
+            padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -103,21 +108,15 @@ class _FilterWidgetState extends State<FilterWidget> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-               
-                
-                _buildStatusFilter(),
+                _buildStatusFilter(currentFilters),
                 const SizedBox(height: 20),
-
-                _buildGenderFilter(),
+                _buildGenderFilter(currentFilters),
                 const SizedBox(height: 20),
-
-                _buildPoliticalAffiliationFilter(),
+                _buildPoliticalAffiliationFilter(currentFilters),
                 const SizedBox(height: 20),
-
-                _buildAgeFilter(),
+                _buildAgeFilter(currentFilters),
                 const SizedBox(height: 20),
-
-                _buildReligionFilter(),
+                _buildReligionFilter(currentFilters),
                 const SizedBox(height: 24),
               ],
             ),
@@ -128,21 +127,21 @@ class _FilterWidgetState extends State<FilterWidget> {
   }
 
   /// ---------------- FILTER SECTIONS ----------------
-  Widget _buildStatusFilter() {
+  Widget _buildStatusFilter(FilterModel currentFilters) {
     return _buildFilterSection(
       title: 'Voter Status',
       filters: [
         _buildFilterChip(
           label: 'Pending',
           value: 'pending',
-          selected: _currentFilters.status == 'pending',
+          selected: currentFilters.status == 'pending',
           onSelected:
               (selected) => _updateFilter(status: selected ? 'pending' : null),
         ),
         _buildFilterChip(
           label: 'Completed',
           value: 'completed',
-          selected: _currentFilters.status == 'completed',
+          selected: currentFilters.status == 'completed',
           onSelected:
               (selected) =>
                   _updateFilter(status: selected ? 'completed' : null),
@@ -151,7 +150,7 @@ class _FilterWidgetState extends State<FilterWidget> {
     );
   }
 
-  Widget _buildAgeFilter() {
+  Widget _buildAgeFilter(FilterModel currentFilters) {
     return BlocBuilder<AgeGroupStatsBloc, AgeGroupStatsState>(
       builder: (context, state) {
         if (state is AgeGroupStatsSuccess) {
@@ -162,7 +161,7 @@ class _FilterWidgetState extends State<FilterWidget> {
                   return _buildFilterChip(
                     label: e.label,
                     value: e.label,
-                    selected: _currentFilters.ageGroup == e.label,
+                    selected: currentFilters.ageGroup == e.label,
                     onSelected:
                         (selected) =>
                             _updateFilter(ageGroup: selected ? e.label : null),
@@ -170,12 +169,12 @@ class _FilterWidgetState extends State<FilterWidget> {
                 }).toList(),
           );
         }
-        return  SizedBox(height: 50, child: Util.shimmerBox(height: 5));
+        return SizedBox(height: 50, child: Util.shimmerBox(height: 5));
       },
     );
   }
 
-  Widget _buildReligionFilter() {
+  Widget _buildReligionFilter(FilterModel currentFilters) {
     return BlocBuilder<ReligionBloc, ReligionState>(
       builder: (context, state) {
         if (state is ReligionSuccess) {
@@ -187,7 +186,7 @@ class _FilterWidgetState extends State<FilterWidget> {
                     color: Util.hexToColor(religion.color),
                     label: religion.name,
                     value: religion.value,
-                    selected: _currentFilters.religion == religion.value,
+                    selected: currentFilters.religion == religion.value,
                     onSelected:
                         (selected) => _updateFilter(
                           religion: selected ? religion.value : null,
@@ -207,7 +206,7 @@ class _FilterWidgetState extends State<FilterWidget> {
     );
   }
 
-  Widget _buildPoliticalAffiliationFilter() {
+  Widget _buildPoliticalAffiliationFilter(FilterModel currentFilters) {
     return BlocBuilder<PartyListBloc, PartyListState>(
       builder: (context, state) {
         if (state is PartyListSuccess) {
@@ -216,7 +215,7 @@ class _FilterWidgetState extends State<FilterWidget> {
                 return _buildFilterChip(
                   label: politicalGroup.name,
                   value: politicalGroup.name,
-                  selected: _currentFilters.affiliation == politicalGroup.name,
+                  selected: currentFilters.affiliation == politicalGroup.name,
                   onSelected:
                       (selected) => _updateFilter(
                         affiliation: selected ? politicalGroup.name : null,
@@ -249,7 +248,7 @@ class _FilterWidgetState extends State<FilterWidget> {
     );
   }
 
-  Widget _buildGenderFilter() {
+  Widget _buildGenderFilter(FilterModel currentFilters) {
     return BlocBuilder<StartupBloc, StartupState>(
       builder: (context, state) {
         if (state is StartupSuccess) {
@@ -260,7 +259,7 @@ class _FilterWidgetState extends State<FilterWidget> {
                   return _buildFilterChip(
                     label: e.name,
                     value: e.name,
-                    selected: _currentFilters.gender == e.name,
+                    selected: currentFilters.gender == e.name,
                     onSelected:
                         (selected) =>
                             _updateFilter(gender: selected ? e.name : null),
@@ -268,7 +267,7 @@ class _FilterWidgetState extends State<FilterWidget> {
                 }).toList(),
           );
         }
-        return  SizedBox(height: 50, child: Util.shimmerBox(height: 5));
+        return SizedBox(height: 50, child: Util.shimmerBox(height: 5));
       },
     );
   }
@@ -332,28 +331,23 @@ class _FilterWidgetState extends State<FilterWidget> {
     String? religion,
     String? gender,
   }) {
-    context.read<FilterCubit>().updateFilter(
+    context.read<FilterCubit>().updateTemporaryFilter(
       status: status,
       affiliation: affiliation,
       ageGroup: ageGroup,
       religion: religion,
       gender: gender,
     );
-
-    widget.onFiltersChanged(context.read<FilterCubit>().state); // notify parent
   }
 
   void _clearAllFilters() {
-    setState(() {
-      _currentFilters = FilterModel.initial();
-    });
-    context.read<FilterCubit>().clearAllFilters();
-    widget.onFiltersChanged(_currentFilters); // 🔑 ensure parent notified
+    context.read<FilterCubit>().resetTemporaryFilters();
   }
 
   void _applyFilters() {
-    context.read<FilterCubit>().emit(_currentFilters); // sync cubit
-    widget.onFiltersChanged(_currentFilters); // notify parent
+    context.read<FilterCubit>().applyTemporaryFilters();
+    final appliedFilters = context.read<FilterCubit>().currentAppliedFilters;
+    widget.onFiltersChanged(appliedFilters);
     Navigator.pop(context);
   }
 }
