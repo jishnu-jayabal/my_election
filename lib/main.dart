@@ -1,11 +1,13 @@
 import 'package:election_mantra/app_routes.dart';
 import 'package:election_mantra/core/dependency.dart';
-import 'package:election_mantra/presentation/blocs/age_group_stats_count/age_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/age_group_stats/age_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/download_excel_pdf/download_excel_pd_bloc.dart';
+import 'package:election_mantra/presentation/blocs/house_list/house_list_bloc.dart';
 import 'package:election_mantra/presentation/blocs/login/login_bloc.dart';
 import 'package:election_mantra/presentation/blocs/party_list/party_list_bloc.dart';
-import 'package:election_mantra/presentation/blocs/party_stats_count/party_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/party_stats/party_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/religion/religion_bloc.dart';
-import 'package:election_mantra/presentation/blocs/religion_group_stats_count/religion_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/religion_group_stats/religion_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/startup/startup_bloc.dart';
 import 'package:election_mantra/presentation/blocs/update_voter/update_voter_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_list/voters_list_bloc.dart';
@@ -45,6 +47,7 @@ class MyApp extends StatelessWidget {
       providers: [BlocProvider<LoginBloc>(create: (context) => LoginBloc()),
       BlocProvider<StartupBloc>(create: (context) => StartupBloc()),
       BlocProvider<VotersListBloc>(create: (context) => VotersListBloc()),
+      BlocProvider<HouseListBloc>(create: (context) => HouseListBloc()),
       BlocProvider<VotersStatsBloc>(create: (context) => VotersStatsBloc()),
       BlocProvider<PartyStatsBloc>(create: (context) => PartyStatsBloc()),
       BlocProvider<PartyListBloc>(create: (context) => PartyListBloc()),
@@ -53,6 +56,7 @@ class MyApp extends StatelessWidget {
       BlocProvider<ReligionBloc>(create: (context) => ReligionBloc()),
       BlocProvider<UpdateVoterBloc>(create: (context) => UpdateVoterBloc()),
       BlocProvider<FilterCubit>(create: (context) => FilterCubit()),
+      BlocProvider<DownloadExcelPdBloc>(create: (context) => DownloadExcelPdBloc()),
       ],
       child: MaterialApp(
         title: 'Election Mantra',

@@ -112,11 +112,11 @@ class ApiBridge {
     return _userRepository.getStayingStatus();
   }
 
-  Future<Map<String, PartyCensusStats>> getPartySupportCount({
+  Future<PartyCensusStats> getPartySupportCount({
     int? boothId,
     int? wardId,
     int? constituencyId,
-  }) {
+  }){
     return _userRepository.getPartySupportCount(
       boothId: boothId,
       constituencyId: constituencyId,

@@ -1,20 +1,18 @@
-import 'package:election_mantra/api/models/religion.dart';
 import 'package:election_mantra/core/util.dart';
-import 'package:election_mantra/presentation/blocs/age_group_stats_count/age_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/age_group_stats/age_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/house_list/house_list_bloc.dart';
 import 'package:election_mantra/presentation/blocs/login/login_bloc.dart';
 import 'package:election_mantra/presentation/blocs/party_list/party_list_bloc.dart';
-import 'package:election_mantra/presentation/blocs/party_stats_count/party_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/party_stats/party_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/religion/religion_bloc.dart';
-import 'package:election_mantra/presentation/blocs/religion_group_stats_count/religion_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/religion_group_stats/religion_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/startup/startup_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_list/voters_list_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_stats_count/voters_stats_bloc.dart';
 import 'package:election_mantra/presentation/cubit/cubit/filter_cubit.dart';
-import 'package:election_mantra/presentation/widgets/age_group_stats_widget.dart';
-import 'package:election_mantra/presentation/widgets/age_wise_section.dart';
 import 'package:election_mantra/presentation/widgets/header.dart';
+import 'package:election_mantra/presentation/widgets/house_list_section.dart';
 import 'package:election_mantra/presentation/widgets/party_census_stats_widget.dart';
-import 'package:election_mantra/presentation/widgets/religion_wise_section.dart';
 import 'package:election_mantra/presentation/widgets/side_menu.dart';
 import 'package:election_mantra/presentation/widgets/voters_census_stats_widget.dart';
 import 'package:election_mantra/presentation/widgets/voters_list_section.dart';
@@ -31,6 +29,7 @@ class BoothAgentDashboard extends StatefulWidget {
 class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
   int _currentIndex = 0;
   final String constituency = "Thiruvananthapuram South";
+  bool isNetwork = false;
 
   @override
   void initState() {
@@ -47,7 +46,9 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: Header(),
+      appBar: Header(
+        showDownloadButton: (_currentIndex == 2 || _currentIndex == 3),
+      ),
       drawer: SideMenu(),
       body: BlocListener<LoginBloc, LoginState>(
         listener: (context, state) {
@@ -62,20 +63,23 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
   }
 
   void _triggerDataLoads(BuildContext context, {required int boothId}) {
-    context.read<VotersStatsBloc>().add(
-      FetchVotersStatsEvent(boothId: boothId),
-    );
     context.read<PartyListBloc>().add(FetchPartyListEvent());
     context.read<ReligionBloc>().add(FetchReligionEvent());
-    context.read<PartyStatsBloc>().add(FetchPartysStatsEvent(boothId: boothId));
+    context.read<StartupBloc>().add(FetchStartupEvent());
+
+    context.read<VotersListBloc>().add(FetchVotersListEvent(boothId: boothId));
+    context.read<VotersStatsBloc>().add(
+      FetchVotersStatsEventNetwork(boothId: boothId),
+    );
+    context.read<PartyStatsBloc>().add(
+      FetchPartysStatsEventNetwork(boothId: boothId),
+    );
     context.read<ReligionGroupStatsBloc>().add(
-      FetchReligionGroupStatsEvent(boothId: boothId),
+      FetchReligionGroupStatsEventNetwork(boothId: boothId),
     );
     context.read<AgeGroupStatsBloc>().add(
       FetchAgeGroupStatsEvent(boothId: boothId),
     );
-    context.read<VotersListBloc>().add(FetchVotersListEvent(boothId: boothId));
-    context.read<StartupBloc>().add(FetchStartupEvent());
   }
 
   Widget _getCurrentScreen() {
@@ -83,9 +87,9 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
       case 0:
         return _buildDashboardView();
       case 1:
-        return _buildAgeWiseView();
+        return _buildPollingDays();
       case 2:
-        return _buildReligionWise();
+        return _buildHouseWiseView();
       case 3:
         return _buildVoterListView();
       default:
@@ -94,97 +98,153 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
   }
 
   Widget _buildDashboardView() {
-    return CustomScrollView(
-      slivers: [
-        // Constituency info below app bar
-        SliverToBoxAdapter(
-          child: Container(
-            color: Colors.blue[50],
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.location_on, size: 14, color: Colors.blue[700]),
-                const SizedBox(width: 4),
-                Text(
-                  constituency,
-                  style: TextStyle(
-                    color: Colors.blue[700],
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
+    return BlocBuilder<VotersListBloc, VotersListState>(
+      builder: (context, state) {
+        if (state is VotersListSuccess) {
+          final allVoters = context.read<VotersListBloc>().allVoters;
+          //Local
+          BlocProvider.of<HouseListBloc>(
+            context,
+          ).add(FetchHouseListEventLocal(voters: allVoters));
+          final loginSuccessState =
+              context.read<LoginBloc>().state as LoginSuccessState;
+          final partyListSuccess =
+              context.read<PartyListBloc>().state as PartyListSuccess;
+          final religionSuccess =
+              context.read<ReligionBloc>().state as ReligionSuccess;
+          context.read<VotersStatsBloc>().add(
+            FetchVotersStatsEventLocal(
+              boothId: loginSuccessState.user.boothNo,
+              allVoters: allVoters,
+            ),
+          );
+          context.read<PartyStatsBloc>().add(
+            FetchPartysStatsEventLocal(
+              boothId: loginSuccessState.user.boothNo,
+              allVoters: allVoters,
+              politicalGroups: partyListSuccess.politicalGroups,
+            ),
+          );
+          context.read<ReligionGroupStatsBloc>().add(
+            FetchReligionGroupStatsLocal(
+              boothId: loginSuccessState.user.boothNo,
+              allVoters: allVoters,
+              religions: religionSuccess.religions,
+            ),
+          );
+
+          return CustomScrollView(
+            slivers: [
+              // Constituency info below app bar
+              SliverToBoxAdapter(
+                child: Container(
+                  color: Colors.blue[50],
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 16,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: 14,
+                        color: Colors.blue[700],
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        constituency,
+                        style: TextStyle(
+                          color: Colors.blue[700],
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
+              ),
 
-        // Stats section
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(vertical: 20.0),
-          sliver: _buildVotersCensusStats(),
-        ),
+              // Stats section
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(vertical: 20.0),
+                sliver: _buildVotersCensusStats(),
+              ),
 
-        // Party counts section
-        _buildPartyCensusStatus(),
+              // Party counts section
+              _buildPartyCensusStatus(),
 
-        // Quick stats header
-        SliverPadding(
-          padding: const EdgeInsets.only(
-            top: 24,
-            left: 24,
-            right: 24,
-            bottom: 8,
-          ),
-          sliver: SliverToBoxAdapter(
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Quick Stats",
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blueAccent,
+              // Quick stats header
+              SliverPadding(
+                padding: const EdgeInsets.only(
+                  top: 24,
+                  left: 24,
+                  right: 24,
+                  bottom: 8,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Party Percentage",
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blueAccent,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _currentIndex = 1;
-                    });
-                  },
-                  child: const Text("View All"),
-                ),
-              ],
-            ),
-          ),
-        ),
+              ),
 
-        // Age groups
-        SliverPadding(
-          padding: const EdgeInsets.symmetric(horizontal: 5.0),
-          sliver: _buildAgeGroupStats(),
-        ),
-
-        const SliverToBoxAdapter(child: SizedBox(height: 16)),
-      ],
+              PartyCensusStatsWidget(
+                onPartyChipClicked: (value) {},
+                isCardMode: true,
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
+            ],
+          );
+        }
+        return Util.shimmerBox(height: 10);
+      },
     );
   }
 
-  Widget _buildAgeWiseView() {
-    return AgeWiseSection();
+  Widget _buildPollingDays() {
+    return Center(
+      child: Container(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.construction, size: 150, color: Colors.grey),
+            SizedBox(height: 25),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: 25.0,
+                horizontal: 30.0,
+              ),
+              child: Text(
+                "🚧 App Under Maintenance 🚧 We're making things better! Please check back soon.",
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge!.copyWith(fontSize: 17),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  Widget _buildReligionWise() {
-    return ReligionWiseSection();
+  Widget _buildHouseWiseView() {
+    return HouseListSection();
   }
 
   Widget _buildVoterListView() {
     return VotersListSection();
-  }
-
-  Widget _buildAgeGroupStats() {
-    return AgeGroupStatsWidget();
   }
 
   Widget _buildVotersCensusStats() {
@@ -237,11 +297,8 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
           icon: Icon(Icons.dashboard),
           label: 'Dashboard',
         ),
-        BottomNavigationBarItem(icon: Icon(Icons.cake), label: 'Age Wise'),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.public),
-          label: 'Religion Wise',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.poll), label: 'Polling Day'),
+        BottomNavigationBarItem(icon: Icon(Icons.house), label: 'House Wise'),
         BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Voter List'),
       ],
     );

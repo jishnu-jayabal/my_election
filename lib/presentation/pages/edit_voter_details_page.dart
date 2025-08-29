@@ -1,5 +1,7 @@
 import 'package:election_mantra/api/models/staying_status.dart';
+import 'package:election_mantra/api/models/voter_cocern.dart';
 import 'package:election_mantra/api/models/voter_details.dart';
+import 'package:election_mantra/core/constant/palette.dart';
 import 'package:election_mantra/core/local_data.dart';
 import 'package:election_mantra/core/util.dart';
 import 'package:election_mantra/presentation/blocs/login/login_bloc.dart';
@@ -10,7 +12,6 @@ import 'package:election_mantra/presentation/blocs/update_voter/update_voter_blo
 import 'package:election_mantra/presentation/blocs/voters_list/voters_list_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:intl_phone_field/countries.dart';
 
 class EditVoterDetailsPage extends StatefulWidget {
   final VoterDetails voter;
@@ -18,24 +19,21 @@ class EditVoterDetailsPage extends StatefulWidget {
   const EditVoterDetailsPage({super.key, required this.voter});
 
   @override
-  // ignore: library_private_types_in_public_api
-  _EditVoterDetailsPageState createState() => _EditVoterDetailsPageState();
+  State<EditVoterDetailsPage> createState() => _EditVoterDetailsPageState();
 }
 
 class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
   late VoterDetails _editedVoter;
   final _formKey = GlobalKey<FormState>();
-  late LoginSuccessState loginSuccessState;
+  late LoginSuccessState _loginSuccessState;
 
   @override
   void initState() {
     super.initState();
     _editedVoter = widget.voter;
-    loginSuccessState =
-        BlocProvider.of<LoginBloc>(context).state as LoginSuccessState;
+    _loginSuccessState = context.read<LoginBloc>().state as LoginSuccessState;
   }
 
-  // Create a new VoterDetails instance with updated values
   VoterDetails _updateVoter({
     String? party,
     bool? isSureVote,
@@ -84,21 +82,27 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
       createdAt: _editedVoter.createdAt,
       updatedAt: DateTime.now(),
       updatedBy:
-          '${loginSuccessState.user.name}:${loginSuccessState.user.id}', // Replace with actual user ID
+          '${_loginSuccessState.user.name}:${_loginSuccessState.user.id}',
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      bottomNavigationBar: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: _buildSaveButton(),
+      ),
       appBar: AppBar(
-        title: const Text('Edit Voter Record'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _saveVoterDetails,
-          ),
-        ],
+        foregroundColor: Palette.textPrimary,
+        backgroundColor: Palette.primary,
+        title:  Text('Edit Voter Record',
+        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+
+          color: Palette.textPrimary
+        ),
+        ),
+      
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -121,7 +125,6 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
               const Divider(),
               _buildResidenceInfoSection(),
               const SizedBox(height: 30),
-              _buildSaveButton(),
             ],
           ),
         ),
@@ -139,10 +142,9 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
           children: [
             const Text(
               'Basic Information',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-
             Row(
               children: [_buildInfoItem('name', _editedVoter.name.toString())],
             ),
@@ -186,11 +188,14 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
           children: [
             const Text(
               'Voter Information ★',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-            const Text('Party', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
+            const Text(
+              'Party',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
+            const SizedBox(height: 16),
             BlocBuilder<PartyListBloc, PartyListState>(
               builder: (context, partyState) {
                 if (partyState is PartyListSuccess) {
@@ -200,38 +205,40 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
                       spacing: 8,
                       runSpacing: 8,
                       children:
-                          partyState.politicalGroups.map((party) {
-                            return _buildPartyChip(party.name);
-                          }).toList(),
+                          partyState.politicalGroups
+                              .map(
+                                (party) =>
+                                    _buildPartyChip(party.name, party.color),
+                              )
+                              .toList(),
                     ),
                   );
                 }
                 return Util.shimmerBox(height: 10);
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 25),
             const Text(
               'Sure Vote',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 50),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
+              child: Row(
                 children: [
-                  _buildSureVoteChip('Yes'),
-                  _buildSureVoteChip('Doubtful'),
+                  _buildSureVoteButton('Yes'),
+                  const SizedBox(width: 8.0),
+                  _buildSureVoteButton('Doubtful'),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 25),
             const Text(
               'Vote Type',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             BlocBuilder<StartupBloc, StartupState>(
               builder: (context, startupState) {
                 if (startupState is StartupSuccess) {
@@ -241,9 +248,9 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
                       spacing: 8,
                       runSpacing: 8,
                       children:
-                          startupState.voterType.map((vtype) {
-                            return _buildVoteTypeChip(vtype.name);
-                          }).toList(),
+                          startupState.voterType
+                              .map((vtype) => _buildVoteTypeBox(vtype.name))
+                              .toList(),
                     ),
                   );
                 }
@@ -266,14 +273,14 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
           children: [
             const Text(
               'Cultural Information',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 25),
             const Text(
               'Religion',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             BlocBuilder<ReligionBloc, ReligionState>(
               builder: (context, religionState) {
                 if (religionState is ReligionSuccess) {
@@ -283,31 +290,37 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
                       spacing: 8,
                       runSpacing: 8,
                       children:
-                          religionState.religions.map((r) {
-                            return _buildReligionChip(r.name, r.value);
-                          }).toList(),
+                          religionState.religions
+                              .map(
+                                (r) => _buildReligionChip(
+                                  r.name,
+                                  r.value,
+                                  r.color,
+                                ),
+                              )
+                              .toList(),
                     ),
                   );
                 }
                 return Util.shimmerBox(height: 10);
               },
             ),
+            const SizedBox(height: 25),
+            const Text(
+              'Caste',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            ),
             const SizedBox(height: 16),
-            const Text('Caste', style: TextStyle(fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
             BlocBuilder<ReligionBloc, ReligionState>(
               builder: (context, religionState) {
                 if (religionState is ReligionSuccess) {
-                  // Find the selected religion
                   final selectedReligion = religionState.religions.firstWhere(
                     (r) => r.value == _editedVoter.religion,
                     orElse: () => religionState.religions.first,
                   );
 
-                  // Get castes for the selected religion
                   final casteOptions = selectedReligion.castes;
 
-                  // If no castes available, show message or hide the field
                   if (casteOptions.isEmpty) {
                     return const Text(
                       'No caste options available for this religion',
@@ -325,27 +338,44 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
                                 casteOptions.contains(_editedVoter.caste)
                             ? _editedVoter.caste
                             : null,
-                    items: [
-                      const DropdownMenuItem<String>(
-                        value: null,
-                        child: Text('Select Caste (Optional)'),
-                      ),
-                      ...casteOptions.map(
-                        (caste) =>
-                            DropdownMenuItem(value: caste, child: Text(caste)),
-                      ),
-                    ],
+                    isExpanded: true,
+                    hint: const Text(
+                      'Select Caste (Optional)',
+                      style: TextStyle(color: Colors.grey),
+                    ),
+                    items:
+                        casteOptions
+                            .map(
+                              (caste) => DropdownMenuItem(
+                                value: caste,
+                                child: Text(
+                                  caste.toUpperCase(),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            )
+                            .toList(),
                     onChanged: (value) {
                       setState(() {
                         _editedVoter = _updateVoter(caste: value);
                       });
                     },
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                    decoration: InputDecoration(
+                      hintText: 'Select Caste (Optional)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: const BorderSide(width: 1.5),
                       ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                    ),
+                    dropdownColor: Colors.white,
+                    style: const TextStyle(fontSize: 16, color: Colors.black),
+                    icon: const Icon(
+                      Icons.arrow_drop_down,
+                      color: Colors.black,
                     ),
                   );
                 }
@@ -368,14 +398,14 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
           children: [
             const Text(
               'Professional Information',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 25),
             const Text(
               'Education',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             BlocBuilder<StartupBloc, StartupState>(
               builder: (context, startupState) {
                 if (startupState is StartupSuccess) {
@@ -408,12 +438,15 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
                         _editedVoter = _updateVoter(education: value);
                       });
                     },
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       hintText: 'Select One',
-                      border: OutlineInputBorder(),
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(25),
+                        borderSide: const BorderSide(width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
                       ),
                     ),
                   );
@@ -421,12 +454,12 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
                 return Util.shimmerBox(height: 10);
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
             const Text(
               'Occupation',
-              style: TextStyle(fontWeight: FontWeight.bold),
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             ConstrainedBox(
               constraints: const BoxConstraints(minHeight: 50),
               child: Wrap(
@@ -442,9 +475,11 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
             const SizedBox(height: 16),
             TextFormField(
               initialValue: _editedVoter.mobileNo,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Mobile Number',
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
               ),
               keyboardType: TextInputType.phone,
               onChanged: (value) {
@@ -456,9 +491,11 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
             const SizedBox(height: 16),
             TextFormField(
               initialValue: _editedVoter.influencer,
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 labelText: 'Influencer',
-                border: OutlineInputBorder(),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(25),
+                ),
               ),
               onChanged: (value) {
                 setState(() {
@@ -485,45 +522,63 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
                 children: [
                   const Text(
                     'Residence Information',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Staying Status',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'STAYING STATUS',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
                   ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 50),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children:
-                          state.stayingStatus.map((st) {
-                            return _buildStayingStatusChip(st.name, st.type);
-                          }).toList(),
+                    constraints: const BoxConstraints(minHeight: 100),
+                    child: GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                            childAspectRatio: 2.5,
+                          ),
+                      itemCount: state.stayingStatus.length,
+                      itemBuilder: (context, index) {
+                        final st = state.stayingStatus[index];
+                        final isSelected =
+                            _editedVoter.stayingStatus == st.name;
+
+                        return _buildStayingStatusBox(st, isSelected);
+                      },
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Conditionally show either dropdown or textfield based on staying status type
                   _buildStayingLocationField(),
-
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 20),
                   const Text(
                     'Voter Concern',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 16),
                   ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 50),
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children:
-                          state.voterConcern.map((vc) {
-                            return _buildVoterConcernChip(vc.name);
-                          }).toList(),
+                    constraints: const BoxConstraints(minHeight: 100),
+                    child: GridView.builder(
+                      physics: const NeverScrollableScrollPhysics(),
+                      shrinkWrap: true,
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            mainAxisSpacing: 8,
+                            crossAxisSpacing: 8,
+                            childAspectRatio: 2.5,
+                          ),
+                      itemCount: state.voterConcern.length,
+                      itemBuilder: (context, index) {
+                        final vc = state.voterConcern[index];
+                        final isSelected = _editedVoter.voterConcern == vc.name;
+
+                        return _buildVoterConcernBox(vc, isSelected);
+                      },
                     ),
                   ),
                 ],
@@ -533,6 +588,68 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
         }
         return Util.shimmerBox(height: 10);
       },
+    );
+  }
+
+  Widget _buildVoterConcernBox(VoterConcern vc, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _editedVoter = _updateVoter(voterConcern: vc.name);
+        });
+      },
+      child: Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blueAccent : Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.blue : Colors.grey,
+            width: 1.5,
+          ),
+        ),
+        child: Text(
+          vc.name,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : Colors.black87,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStayingStatusBox(StayingStatus st, bool isSelected) {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _editedVoter = _updateVoter(
+            stayingStatus: st.name,
+            stayingLocation: null,
+          );
+        });
+      },
+      child: Container(
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isSelected ? Colors.blueAccent : Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.blue : Colors.grey,
+            width: 1.5,
+          ),
+        ),
+        child: Text(
+          st.name,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: isSelected ? Colors.white : Colors.black87,
+          ),
+        ),
+      ),
     );
   }
 
@@ -551,17 +668,24 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
     );
   }
 
-  Widget _buildPartyChip(String party) {
+  Widget _buildPartyChip(String party, String color) {
+    final isSelected = _editedVoter.party == party;
+
     return ChoiceChip(
-      label: SizedBox(
-        width: 80, // Fixed width to prevent jumping
-        child: Text(
-          party,
-          textAlign: TextAlign.center,
-          overflow: TextOverflow.ellipsis,
+      checkmarkColor: Palette.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10.0),
+      ),
+      label: Text(
+        party,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          fontWeight: FontWeight.bold,
+          color: isSelected ? Colors.white : Colors.black87,
         ),
       ),
-      selected: _editedVoter.party == party,
+      selectedColor: Util.hexToColor(color),
+      selected: isSelected,
       onSelected: (selected) {
         if (selected) {
           setState(() {
@@ -569,50 +693,69 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
           });
         }
       },
-      labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      labelPadding: const EdgeInsets.symmetric(horizontal: 5,vertical: 4),
     );
   }
 
-  Widget _buildSureVoteChip(String label) {
+  Widget _buildSureVoteButton(String label) {
     final isSelected =
         (label == 'Yes') ? _editedVoter.isSureVote : !_editedVoter.isSureVote;
 
-    return ChoiceChip(
-      label: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Text(label),
-      ),
-      selected: isSelected,
-      onSelected: (selected) {
-        if (selected) {
+    return Expanded(
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isSelected ? Palette.accentTeal : Colors.white,
+          foregroundColor: isSelected ? Colors.white : Colors.black,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+        ),
+        onPressed: () {
           setState(() {
             _editedVoter = _updateVoter(isSureVote: label == 'Yes');
           });
-        }
-      },
-      labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    );
-  }
-
-  Widget _buildVoteTypeChip(String voteType) {
-    return ChoiceChip(
-      label: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Text(voteType),
+        },
+        child: Text(label, textAlign: TextAlign.center),
       ),
-      selected: _editedVoter.voteType == voteType,
-      onSelected: (selected) {
-        if (selected) {
-          setState(() {
-            _editedVoter = _updateVoter(voteType: voteType);
-          });
-        }
-      },
-      labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     );
   }
 
-  Widget _buildReligionChip(String religion, String value) {
+  Widget _buildVoteTypeBox(String voteType) {
+    final isSelected = _editedVoter.voteType == voteType;
+
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _editedVoter = _updateVoter(voteType: voteType);
+        });
+      },
+      child: Container(
+        width: 100,
+        height: 40,
+        decoration: BoxDecoration(
+          color: isSelected ? Palette.accentTeal : Colors.white,
+          borderRadius: BorderRadius.circular(30),
+          border: Border.all(
+            color: isSelected ? Colors.blue : Colors.grey[300]!,
+            width: 2,
+          ),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Text(
+              voteType.toUpperCase(),
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.black,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReligionChip(String religion, String value, String color) {
     return BlocBuilder<ReligionBloc, ReligionState>(
       builder: (context, religionState) {
         if (religionState is ReligionSuccess) {
@@ -624,15 +767,28 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
           final hasCastes = selectedReligion.castes.isNotEmpty;
 
           return ChoiceChip(
-            label: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Text(religion),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10.0),
             ),
+            label: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
+              child: Text(
+                religion.toUpperCase(),
+                style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+                  fontSize: 15.0,
+                  fontWeight: FontWeight.bold,
+                  color:
+                      _editedVoter.religion == value
+                          ? Colors.white
+                          : Colors.black,
+                ),
+              ),
+            ),
+            selectedColor: Util.hexToColor(color),
             selected: _editedVoter.religion == value,
             onSelected: (selected) {
               if (selected) {
                 setState(() {
-                  // Reset caste when religion changes, but only if the new religion has castes
                   if (hasCastes) {
                     _editedVoter = _updateVoter(religion: value, caste: null);
                   } else {
@@ -642,8 +798,8 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
               }
             },
             labelPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 8,
+              horizontal: 5,
+              vertical: 0,
             ),
           );
         }
@@ -662,10 +818,22 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
 
   Widget _buildOccupationChip(String occupation) {
     return ChoiceChip(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       label: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Text(occupation),
+        child: Text(
+          occupation,
+          style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+            fontSize: 15.0,
+            fontWeight: FontWeight.bold,
+            color:
+                _editedVoter.occupation == occupation
+                    ? Colors.white
+                    : Colors.black,
+          ),
+        ),
       ),
+      selectedColor: Colors.deepPurpleAccent,
       selected: _editedVoter.occupation == occupation,
       onSelected: (selected) {
         if (selected) {
@@ -674,67 +842,23 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
           });
         }
       },
-      labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    );
-  }
-
-  Widget _buildStayingStatusChip(String status, String type) {
-    return ChoiceChip(
-      label: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Text(status),
-      ),
-      selected: _editedVoter.stayingStatus == status,
-      onSelected: (selected) {
-        if (selected) {
-          setState(() {
-            // Reset staying location when status changes
-            _editedVoter = _updateVoter(
-              stayingStatus: status,
-              stayingLocation: null, // Reset location
-            );
-          });
-        }
-      },
-      labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    );
-  }
-
-  Widget _buildVoterConcernChip(String concern) {
-    return ChoiceChip(
-      label: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        child: Text(concern),
-      ),
-      selected: _editedVoter.voterConcern == concern,
-      onSelected: (selected) {
-        if (selected) {
-          setState(() {
-            _editedVoter = _updateVoter(voterConcern: concern);
-          });
-        }
-      },
-      labelPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      labelPadding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
     );
   }
 
   Widget _buildStayingLocationField() {
     final stayingStatus = _editedVoter.stayingStatus;
-
-    // Find the staying status type from the bloc state
     final stayingStatusType = _getStayingStatusType(stayingStatus);
 
     if (stayingStatusType == 'none') {
-      return const SizedBox.shrink(); // Hide if no valid status selected
+      return const SizedBox.shrink();
     }
 
     if (stayingStatusType == 'state' || stayingStatusType == 'country') {
-      // Show dropdown for state or country selection
       final isStateDropdown = stayingStatusType == 'state';
       final options =
           isStateDropdown ? LocalData.indianStates : LocalData.countries;
       final label = isStateDropdown ? 'Select State' : 'Select Country';
-      final hint = isStateDropdown ? 'Select Indian State' : 'Select Country';
 
       return DropdownButtonFormField<String>(
         value:
@@ -757,42 +881,36 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
         },
         decoration: InputDecoration(
           labelText: isStateDropdown ? 'State' : 'Country',
-          hintText: hint,
-          border: const OutlineInputBorder(),
+          hintText: isStateDropdown ? 'Select Indian State' : 'Select Country',
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(25),
+            borderSide: const BorderSide(width: 1.5),
+          ),
           contentPadding: const EdgeInsets.symmetric(
-            horizontal: 12,
-            vertical: 8,
+            horizontal: 16,
+            vertical: 16,
           ),
         ),
       );
     } else {
-      // For other types (like 'inside'), show textfield or hide
-      return const SizedBox.shrink(); // Hide for 'inside' types
+      return const SizedBox.shrink();
     }
   }
 
   String _getStayingStatusType(String? stayingStatus) {
     if (stayingStatus == null) return 'none';
 
-    // You need to get the actual type from your bloc state
-    // This is a placeholder - you'll need to adjust based on your actual data structure
-    final context = this.context;
     final startupState = context.read<StartupBloc>().state;
 
     if (startupState is StartupSuccess) {
       final statusInfo = startupState.stayingStatus.firstWhere(
         (st) => st.name == stayingStatus,
-        orElse:
-            () => StayingStatus(
-              name: '',
-              type: 'none',
-            ), // Adjust based on your actual model
+        orElse: () => StayingStatus(name: '', type: 'none'),
       );
 
       return statusInfo.type;
     }
 
-    // Fallback based on name if type is not available
     if (stayingStatus == 'INSIDE KERALA' ||
         stayingStatus == 'Inside Constituency') {
       return 'inside';
@@ -809,9 +927,9 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
     return BlocConsumer<UpdateVoterBloc, UpdateVoterState>(
       listener: (context, state) {
         if (state is UpdateVoterSuccess) {
-          BlocProvider.of<VotersListBloc>(
-            context,
-          ).add(ReplcaeVoterDetailsevent(voterDetails: _editedVoter));
+          context.read<VotersListBloc>().add(
+            ReplcaeVoterDetailsevent(voterDetails: _editedVoter),
+          );
           Navigator.pop(context);
         }
       },
@@ -819,13 +937,15 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
         if (state is UpdateVoterLoading) {
           return Util.shimmerCircle(size: 30);
         }
-        return Center(
-          child: ElevatedButton(
-            onPressed: _saveVoterDetails,
-            style: ElevatedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-            ),
-            child: const Text('Save Changes', style: TextStyle(fontSize: 16)),
+        return ElevatedButton(
+          onPressed: _saveVoterDetails,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Palette.accentTeal,
+            padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+          ),
+          child: const Text(
+            'Save Changes',
+            style: TextStyle(fontSize: 16, color: Palette.white),
           ),
         );
       },
@@ -835,9 +955,9 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
   void _saveVoterDetails() {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
-      BlocProvider.of<UpdateVoterBloc>(
-        context,
-      ).add(UpdateVoterDetailsEvent(voterDetails: _editedVoter));
+      context.read<UpdateVoterBloc>().add(
+        UpdateVoterDetailsEvent(voterDetails: _editedVoter),
+      );
     }
   }
 }

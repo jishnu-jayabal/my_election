@@ -8,7 +8,7 @@ final class PartyStatsInitial extends PartyStatsState {}
 final class PartyStatsLoading extends PartyStatsState {}
 
 final class PartyStatsSuccess extends PartyStatsState {
-  final Map<String, PartyCensusStats> partyCensusStats;
+  final PartyCensusStats partyCensusStats;
   PartyStatsSuccess({required this.partyCensusStats});
 }
 

@@ -51,7 +51,8 @@ abstract class UserRepository {
 
 
   // Aggregated Insights
-  Future<Map<String, PartyCensusStats>> getPartySupportCount({
+ @override
+  Future<PartyCensusStats> getPartySupportCount({
     int? boothId,
     int? wardId,
     int? constituencyId,

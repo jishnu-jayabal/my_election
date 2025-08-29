@@ -1,46 +1,51 @@
 import 'package:election_mantra/core/constant/palette.dart';
-import 'package:election_mantra/presentation/blocs/age_group_stats_count/age_group_stats_bloc.dart';
+import 'package:election_mantra/core/util.dart';
+import 'package:election_mantra/presentation/blocs/religion_group_stats/religion_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_stats_count/voters_stats_bloc.dart';
-import 'package:election_mantra/presentation/widgets/age_group_stats_widget.dart';
+import 'package:election_mantra/presentation/widgets/religion_group_stats_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-class AgeWiseSection extends StatelessWidget {
-  const AgeWiseSection({super.key});
+class ReligionWisePage extends StatelessWidget {
+  const ReligionWisePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<VotersStatsBloc, VotersStatsState>(
       builder: (context, voterStatsState) {
         if (voterStatsState is VotersStatsSuccess) {
-          return BlocBuilder<AgeGroupStatsBloc, AgeGroupStatsState>(
-            builder: (context, ageGroupStatsState) {
-              if (ageGroupStatsState is AgeGroupStatsSuccess) {
-                final totalVoters = voterStatsState.voterCensusStats.totalVoters;
-                final averageVotersPerGroup = totalVoters > 0 && ageGroupStatsState.ageGroupStats.isNotEmpty
-                    ? totalVoters ~/ ageGroupStatsState.ageGroupStats.length
-                    : 0;
-                
-                // Get smallest group (show "Unknown" if count is 0)
-                final smallestGroup = _getSmallestGroup(ageGroupStatsState);
-                
+          final totalVoters = voterStatsState.voterCensusStats.totalVoters;
+
+          return BlocBuilder<ReligionGroupStatsBloc, ReligionGroupStatsState>(
+            builder: (context, state) {
+              if (state is ReligionGroupStatsSuccess) {
+                final averageVotersPerGroup =
+                    (totalVoters > 0 &&
+                            state.religionGroupStats.isNotEmpty &&
+                            state.religionGroupStats.any((g) => g.count > 0))
+                        ? totalVoters ~/ state.religionGroupStats.length
+                        : 0;
+
+                final smallestGroup = _getSmallestGroup(state);
+
                 return Scaffold(
                   body: CustomScrollView(
                     slivers: [
-                      
-                      // Enhanced App Bar with more information
+                      // Enhanced App Bar
                       SliverAppBar(
-                        expandedHeight: 240, // Increased height for more content
+                        expandedHeight: 240,
                         floating: false,
                         pinned: true,
                         flexibleSpace: FlexibleSpaceBar(
-                        
                           background: Container(
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [Palette.primary , Palette.primary.withAlpha(100)],
+                                colors: [
+                                  Palette.primary,
+                                  Palette.primary.withAlpha(100),
+                                ],
                               ),
                             ),
                             child: Padding(
@@ -48,7 +53,6 @@ class AgeWiseSection extends StatelessWidget {
                               child: Column(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  // Main total voters count
                                   Text(
                                     "Total Voters",
                                     style: TextStyle(
@@ -64,30 +68,37 @@ class AgeWiseSection extends StatelessWidget {
                                       fontWeight: FontWeight.bold,
                                       color: Colors.white,
                                       shadows: [
-                                        Shadow(color: Colors.black.withOpacity(0.5), blurRadius: 6, offset: const Offset(0, 2)),
+                                        Shadow(
+                                          color: Colors.black.withOpacity(0.5),
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 2),
+                                        ),
                                       ],
                                     ),
                                   ),
                                   const SizedBox(height: 16),
-                                  
-                                  // Stats row
                                   Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                    ),
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceAround,
                                       children: [
                                         _buildHeaderStat(
-                                          "${ageGroupStatsState.ageGroupStats.length}",
-                                          "Groups",
+                                          "${state.religionGroupStats.length}",
+                                          "Religions",
                                           Icons.category,
                                         ),
                                         _buildHeaderStat(
                                           averageVotersPerGroup.toString(),
-                                          "Avg/Group",
+                                          "Avg/Religion",
                                           Icons.bar_chart,
                                         ),
                                         _buildHeaderStat(
-                                          _getLargestGroupCount(ageGroupStatsState).toString(),
+                                          _getLargestGroupCount(
+                                            state,
+                                          ).toString(),
                                           "Max",
                                           Icons.arrow_upward,
                                         ),
@@ -101,28 +112,37 @@ class AgeWiseSection extends StatelessWidget {
                         ),
                         actions: [
                           IconButton(
-                            icon: const Icon(Icons.info_outline, color: Colors.white),
+                            icon: const Icon(
+                              Icons.info_outline,
+                              color: Colors.white,
+                            ),
                             onPressed: () {
-                              _showAgeStatsInfo(context, ageGroupStatsState, totalVoters);
+                              _showReligionStatsInfo(
+                                context,
+                                state,
+                                totalVoters,
+                              );
                             },
                           ),
                         ],
                       ),
 
-                      // Summary cards with key metrics
+                      // Summary cards
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
                           child: Column(
                             children: [
-                              // Quick stats row
                               Row(
                                 children: [
                                   Expanded(
                                     child: _buildSummaryCard(
                                       context,
-                                      "Largest Group",
-                                      _getLargestGroup(ageGroupStatsState),
+                                      "Largest Religion",
+                                      _getLargestGroup(state),
                                       Icons.arrow_upward,
                                       Colors.green,
                                     ),
@@ -131,7 +151,7 @@ class AgeWiseSection extends StatelessWidget {
                                   Expanded(
                                     child: _buildSummaryCard(
                                       context,
-                                      "Smallest Group",
+                                      "Smallest Religion",
                                       smallestGroup,
                                       Icons.arrow_downward,
                                       Colors.blue,
@@ -140,10 +160,9 @@ class AgeWiseSection extends StatelessWidget {
                                 ],
                               ),
                               const SizedBox(height: 12),
-                              // Average voters card
                               _buildSummaryCard(
                                 context,
-                                "Average per Group",
+                                "Average per Religion",
                                 "$averageVotersPerGroup voters",
                                 Icons.bar_chart,
                                 Colors.orange,
@@ -154,13 +173,21 @@ class AgeWiseSection extends StatelessWidget {
                         ),
                       ),
 
-                      // Age group visualization header
+                      // Visual Distribution header
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.only(left: 24, top: 8, bottom: 8),
+                          padding: const EdgeInsets.only(
+                            left: 24,
+                            top: 8,
+                            bottom: 8,
+                          ),
                           child: Row(
                             children: [
-                              Icon(Icons.auto_graph, color: Colors.blueAccent, size: 20),
+                              Icon(
+                                Icons.auto_graph,
+                                color: Colors.blueAccent,
+                                size: 20,
+                              ),
                               const SizedBox(width: 8),
                               const Text(
                                 "Visual Distribution",
@@ -174,20 +201,29 @@ class AgeWiseSection extends StatelessWidget {
                           ),
                         ),
                       ),
-                      
-                      // AgeGroupStatsWidget
-                      const AgeGroupStatsWidget(),
-                      
-                      // Detailed list header
+
+                      // Distribution Chart
+                      const ReligionGroupStatsWidget(),
+
+                      // Detailed Breakdown header
                       SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.only(left: 24, top: 24, right: 24, bottom: 12),
+                          padding: const EdgeInsets.only(
+                            left: 24,
+                            top: 24,
+                            right: 24,
+                            bottom: 12,
+                          ),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.list, color: Colors.blueAccent, size: 20),
+                                  Icon(
+                                    Icons.list,
+                                    color: Colors.blueAccent,
+                                    size: 20,
+                                  ),
                                   const SizedBox(width: 8),
                                   const Text(
                                     "Detailed Breakdown",
@@ -201,7 +237,9 @@ class AgeWiseSection extends StatelessWidget {
                               ),
                               Chip(
                                 label: Text("Total: $totalVoters"),
-                                backgroundColor: Colors.blueAccent.withOpacity(0.1),
+                                backgroundColor: Colors.blueAccent.withOpacity(
+                                  0.1,
+                                ),
                                 labelStyle: const TextStyle(
                                   color: Colors.blueAccent,
                                   fontWeight: FontWeight.bold,
@@ -212,38 +250,55 @@ class AgeWiseSection extends StatelessWidget {
                         ),
                       ),
 
-                      // Enhanced list of age groups
+                      // List of Religions
                       SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final ageGroup = ageGroupStatsState.ageGroupStats.toList()[index];
-                            final percentage = (ageGroup.count / totalVoters * 100);
-                            
-                            return _buildAgeGroupItem(
-                              context,
-                              ageGroup.label,
-                              ageGroup.count,
-                              percentage,
-                              index,
-                            );
-                          }, 
-                          childCount: ageGroupStatsState.ageGroupStats.length,
-                        ),
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final religion = state.religionGroupStats[index];
+                          final percentage = religion.percentage;
+
+                          return _buildReligionItem(
+                            context,
+                            religion.label,
+                            religion.count,
+                            percentage,
+                            index,
+                            Util.hexToColor(religion.color),
+                          );
+                        }, childCount: state.religionGroupStats.length),
                       ),
                     ],
                   ),
                 );
               }
-              return const Center(child: CircularProgressIndicator());
+
+              if (state is ReligionGroupStatsLoading) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              if (state is ReligionGroupStatsFailed) {
+                return Scaffold(
+                  body: Center(
+                    child: Text(
+                      "Failed to load data: ${state.msg}",
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                );
+              }
+
+              return const SizedBox.shrink();
             },
           );
         }
-        return const Center(child: CircularProgressIndicator());
+
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }
 
-  // Helper method to build header stats
+  // ---------- Helpers ----------
   Widget _buildHeaderStat(String value, String label, IconData icon) {
     return Column(
       children: [
@@ -251,7 +306,7 @@ class AgeWiseSection extends StatelessWidget {
         const SizedBox(height: 4),
         Text(
           value,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -259,17 +314,20 @@ class AgeWiseSection extends StatelessWidget {
         ),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.white.withOpacity(0.8),
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.8)),
         ),
       ],
     );
   }
 
-  // Helper method to build summary cards
-  Widget _buildSummaryCard(BuildContext context, String title, String value, IconData icon, Color color, {bool fullWidth = false}) {
+  Widget _buildSummaryCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color, {
+    bool fullWidth = false,
+  }) {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -317,8 +375,14 @@ class AgeWiseSection extends StatelessWidget {
     );
   }
 
-  // Helper method to build age group list items
-  Widget _buildAgeGroupItem(BuildContext context, String label, int count, double percentage, int index) {
+  Widget _buildReligionItem(
+    BuildContext context,
+    String label,
+    int count,
+    double percentage,
+    int index,
+    Color color,
+  ) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -327,25 +391,19 @@ class AgeWiseSection extends StatelessWidget {
         leading: Container(
           width: 50,
           height: 50,
-          decoration: BoxDecoration(
-            color: _getColorForIndex(index).withOpacity(0.15),
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           child: Center(
             child: Text(
-              label,
+              label[0].toUpperCase(),
               style: TextStyle(
-                fontSize: 14,
+                fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: _getColorForIndex(index),
+                color: Colors.white,
               ),
             ),
           ),
         ),
-        title: Text(
-          "$label Years",
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
+        title: Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text("$count voters"),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -372,7 +430,7 @@ class AgeWiseSection extends StatelessWidget {
                 widthFactor: percentage / 100,
                 child: Container(
                   decoration: BoxDecoration(
-                    color: _getColorForIndex(index),
+                    color: color,
                     borderRadius: BorderRadius.circular(3),
                   ),
                 ),
@@ -384,94 +442,93 @@ class AgeWiseSection extends StatelessWidget {
     );
   }
 
-  // Helper to get consistent colors based on index
-  Color _getColorForIndex(int index) {
-    final colors = [
-      Colors.blueAccent,
-      Colors.green,
-      Colors.orange,
-      Colors.purple,
-      Colors.red,
-      Colors.teal,
-    ];
-    return colors[index % colors.length];
-  }
+  String _getLargestGroup(ReligionGroupStatsSuccess state) {
+    final filtered =
+        state.religionGroupStats
+            .where((g) => g.label != "Unidentified" && g.count > 0)
+            .toList();
 
-  // Helper to get the largest age group
-  String _getLargestGroup(AgeGroupStatsSuccess state) {
-    if (state.ageGroupStats.isEmpty) return "N/A";
-    
-    final largest = state.ageGroupStats.reduce(
-      (a, b) => a.count > b.count ? a : b,
-    );
+    if (filtered.isEmpty) return "N/A";
+
+    final largest = filtered.reduce((a, b) => a.count > b.count ? a : b);
     return "${largest.label} (${largest.count})";
   }
 
-  // Helper to get the count of the largest group
-  int _getLargestGroupCount(AgeGroupStatsSuccess state) {
-    if (state.ageGroupStats.isEmpty) return 0;
-    
-    final largest = state.ageGroupStats.reduce(
-      (a, b) => a.count > b.count ? a : b,
-    );
+  int _getLargestGroupCount(ReligionGroupStatsSuccess state) {
+    final filtered =
+        state.religionGroupStats
+            .where((g) => g.label != "Unidentified" && g.count > 0)
+            .toList();
+
+    if (filtered.isEmpty) return 0;
+
+    final largest = filtered.reduce((a, b) => a.count > b.count ? a : b);
     return largest.count;
   }
 
-  // Helper to get the smallest age group - returns "Unknown" if count is 0
-  String _getSmallestGroup(AgeGroupStatsSuccess state) {
-    if (state.ageGroupStats.isEmpty) return "Unknown";
-    
-    // Filter out groups with 0 count
-    final nonZeroGroups = state.ageGroupStats.where((group) => group.count > 0).toList();
-    
-    if (nonZeroGroups.isEmpty) return "Unknown";
-    
-    final smallest = nonZeroGroups.reduce(
-      (a, b) => a.count < b.count ? a : b,
-    );
+  String _getSmallestGroup(ReligionGroupStatsSuccess state) {
+    final filtered =
+        state.religionGroupStats
+            .where((g) => g.label != "Unidentified" && g.count > 0)
+            .toList();
+
+    if (filtered.isEmpty) return "Unknown";
+
+    final smallest = filtered.reduce((a, b) => a.count < b.count ? a : b);
     return "${smallest.label} (${smallest.count})";
   }
 
-  // Show detailed information dialog
-  void _showAgeStatsInfo(BuildContext context, AgeGroupStatsSuccess state, int totalVoters) {
+  void _showReligionStatsInfo(
+    BuildContext context,
+    ReligionGroupStatsSuccess state,
+    int totalVoters,
+  ) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Age Distribution Statistics"),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              _buildStatRow("Total Voters", totalVoters.toString()),
-              _buildStatRow("Age Groups", state.ageGroupStats.length.toString()),
-              _buildStatRow("Largest Group", _getLargestGroup(state)),
-              _buildStatRow("Smallest Group", _getSmallestGroup(state)),
-              const SizedBox(height: 16),
-              const Text(
-                "Distribution:",
-                style: TextStyle(fontWeight: FontWeight.bold),
+      builder:
+          (context) => AlertDialog(
+            title: const Text("Religion Distribution Statistics"),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  _buildStatRow("Total Voters", totalVoters.toString()),
+                  _buildStatRow(
+                    "Religions",
+                    state.religionGroupStats.length.toString(),
+                  ),
+                  _buildStatRow("Largest Religion", _getLargestGroup(state)),
+                  _buildStatRow("Smallest Religion", _getSmallestGroup(state)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Distribution:",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  ...state.religionGroupStats.map(
+                    (group) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text("${group.label}:"),
+                          Text(
+                            "${group.count} (${group.percentage.toStringAsFixed(1)}%)",
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              ...state.ageGroupStats.map((group) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("${group.label} Years:"),
-                    Text("${group.count} (${(group.count / totalVoters * 100).toStringAsFixed(1)}%)"),
-                  ],
-                ),
-              )).toList(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Close"),
+              ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
-          ),
-        ],
-      ),
     );
   }
 

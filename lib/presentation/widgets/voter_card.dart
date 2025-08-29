@@ -1,5 +1,6 @@
 import 'package:election_mantra/api/models/voter_details.dart';
 import 'package:election_mantra/app_routes.dart';
+import 'package:election_mantra/presentation/blocs/house_list/house_list_bloc.dart';
 import 'package:election_mantra/presentation/blocs/update_voter/update_voter_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_list/voters_list_bloc.dart';
 import 'package:flutter/material.dart';
@@ -131,6 +132,11 @@ class VoterCard extends StatelessWidget {
                       BlocProvider.of<VotersListBloc>(context).add(
                         ReplcaeVoterDetailsevent(
                           voterDetails: state.voterUpdated,
+                        ),
+                      );
+                       BlocProvider.of<HouseListBloc>(context).add(
+                        UpdateVoterInHouseListEvent(
+                          voter: state.voterUpdated,
                         ),
                       );
                     }

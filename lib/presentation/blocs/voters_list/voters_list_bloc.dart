@@ -9,69 +9,63 @@ part 'voters_list_event.dart';
 part 'voters_list_state.dart';
 
 class VotersListBloc extends Bloc<VotersListEvent, VotersListState> {
-  List<VoterDetails> _allVoters = [];
-  Map<String, List<VoterDetails>> houseWise = {};
+  List<VoterDetails> allVoters = []; // Master full list
+  List<VoterDetails> _visibleVoters =
+      []; // Currently displayed (filtered/search)
   final ApiBridge _apiBridge = GetIt.I<ApiBridge>();
+
   VotersListBloc() : super(VotersListInitial()) {
-    on<SearchVoterListEvent>((event, emit) async {
-      try {
-        emit(VotersListLoading());
-
-        final query = event.searchTerm!.trim().toLowerCase();
-
-        final filteredVoters =
-            _allVoters.where((voter) {
-              return voter.name.toLowerCase().contains(query) ||
-                  voter.guardianName.toLowerCase().contains(query) ||
-                  voter.houseName.toLowerCase().contains(query) ||
-                  voter.voterId.toLowerCase().contains(query);
-            }).toList();
-
-        final grouped = _groupByHouse(filteredVoters);
-
-        emit(VotersListSuccess(voters: filteredVoters, houseWise: grouped));
-      } catch (e) {
-        emit(VotersListFailure(msg: e.toString()));
-      }
-    });
-
-    on<SearchHouseListEvent>((event, emit) async {
-      try {
-        emit(VotersListLoading());
-
-        final query = event.searchTerm!.trim().toLowerCase();
-
-        // find all voters that match house name
-        final filtered =
-            _allVoters.where((voter) {
-              return voter.houseName.toLowerCase().contains(query);
-            }).toList();
-
-        // group by house
-        final grouped = _groupByHouse(filtered);
-
-        emit(VotersListSuccess(voters: filtered, houseWise: grouped));
-      } catch (e) {
-        emit(VotersListFailure(msg: "House search failed: $e"));
-      }
-    });
-
+    /// Fetch all voters
     on<FetchVotersListEvent>((event, emit) async {
       try {
         emit(VotersListLoading());
-        _allVoters = await _apiBridge.getVoters(
+        allVoters = await _apiBridge.getVoters(
           boothId: event.boothId,
           constituencyId: event.constituencyId,
           wardId: event.wardId,
         );
-
-        final grouped = _groupByHouse(_allVoters);
-        emit(VotersListSuccess(voters: _allVoters, houseWise: grouped));
+        _visibleVoters = List.from(allVoters);
+        emit(VotersListSuccess(voters: _visibleVoters));
       } catch (e) {
         emit(VotersListFailure(msg: e.toString()));
       }
     });
 
+    /// Search voters by name/ID/house/guardian
+    on<SearchVoterListEvent>((event, emit) {
+      final query = event.searchTerm?.trim().toLowerCase() ?? "";
+      _visibleVoters =
+          allVoters.where((voter) {
+            return voter.name.toLowerCase().contains(query) ||
+                voter.guardianName.toLowerCase().contains(query) ||
+                voter.houseName.toLowerCase().contains(query) ||
+                voter.voterId.toLowerCase().contains(query);
+          }).toList();
+      emit(VotersListSuccess(voters: _visibleVoters));
+    });
+
+    on<ReplcaeVoterDetailsevent>((event, emit) {
+      if (state is! VotersListSuccess) return;
+      final currentState = state as VotersListSuccess;
+
+      // Update master list
+      final indexInAll = allVoters.indexWhere(
+        (v) => v.id == event.voterDetails.id,
+      );
+      if (indexInAll != -1) allVoters[indexInAll] = event.voterDetails;
+
+      // Update visible list
+      final updatedVisible =
+          currentState.voters
+              .map(
+                (v) => v.id == event.voterDetails.id ? event.voterDetails : v,
+              )
+              .toList();
+
+      emit(currentState.copyWith(voters: updatedVisible));
+    });
+
+    /// Network filter
     on<FetchVoterListByFilterEventNetwork>((event, emit) async {
       try {
         emit(VotersListLoading());
@@ -81,24 +75,22 @@ class VotersListBloc extends Bloc<VotersListEvent, VotersListState> {
           wardId: event.wardId,
           filter: event.filter,
         );
-
-        final grouped = _groupByHouse(voters);
-
-        emit(VotersListSuccess(voters: voters, houseWise: grouped));
+        _visibleVoters = List.from(voters);
+        emit(VotersListSuccess(voters: _visibleVoters));
       } catch (e) {
-        emit(VotersListFailure(msg: e.toString()));
+        emit(VotersListFailure(msg: "Network filter failed: $e"));
       }
     });
 
+    /// Local filter
     on<FetchVoterListByFilterEventLocal>((event, emit) async {
       try {
         emit(VotersListLoading());
 
         List<VoterDetails> voters =
-            _allVoters.where((v) {
+            allVoters.where((v) {
               bool matches = true;
 
-              // status → pending / completed (based on updated_by field)
               if (event.filter.status != null) {
                 if (event.filter.status == "completed") {
                   matches &= (v.updatedBy != null && v.updatedBy!.isNotEmpty);
@@ -107,28 +99,24 @@ class VotersListBloc extends Bloc<VotersListEvent, VotersListState> {
                 }
               }
 
-              // affiliation / party
               if (event.filter.affiliation != null) {
                 matches &=
                     v.party.toLowerCase() ==
                     event.filter.affiliation!.toLowerCase();
               }
 
-              // religion
               if (event.filter.religion != null) {
                 matches &=
                     v.religion.toLowerCase() ==
                     event.filter.religion!.toLowerCase();
               }
 
-              // gender
               if (event.filter.gender != null) {
                 matches &=
                     v.gender.toLowerCase() ==
                     event.filter.gender!.toLowerCase();
               }
 
-              // age group
               if (event.filter.ageGroup != null) {
                 final age = v.age ?? 0;
                 switch (event.filter.ageGroup) {
@@ -142,7 +130,7 @@ class VotersListBloc extends Bloc<VotersListEvent, VotersListState> {
                     matches &= age >= 41 && age <= 60;
                     break;
                   case "61+":
-                    matches &= age >= 60;
+                    matches &= age >= 61;
                     break;
                   case "Unknown":
                     matches &= v.age == null;
@@ -152,68 +140,12 @@ class VotersListBloc extends Bloc<VotersListEvent, VotersListState> {
 
               return matches;
             }).toList();
-        final grouped = _groupByHouse(voters);
 
-        emit(VotersListSuccess(voters: voters, houseWise: grouped));
+        _visibleVoters = voters;
+        emit(VotersListSuccess(voters: _visibleVoters));
       } catch (e) {
         emit(VotersListFailure(msg: "Local filter failed: $e"));
       }
     });
-
-    on<ReplcaeVoterDetailsevent>((event, emit) async {
-      try {
-        final indexInAll = _allVoters.indexWhere(
-          (v) => v.id == event.voterDetails.id,
-        );
-        if (indexInAll != -1) {
-          _allVoters[indexInAll] = event.voterDetails;
-        }
-
-        if (state is VotersListSuccess) {
-          final currentList = (state as VotersListSuccess).voters;
-          final indexInVisible = currentList.indexWhere(
-            (v) => v.id == event.voterDetails.id,
-          );
-
-          List<VoterDetails> updatedVisible = List.from(currentList);
-
-          if (indexInVisible != -1) {
-            updatedVisible[indexInVisible] = event.voterDetails;
-          }
-
-          final grouped = _groupByHouse(updatedVisible);
-
-          emit(VotersListSuccess(voters: updatedVisible, houseWise: grouped));
-        } else {
-          final grouped = _groupByHouse(_allVoters);
-          emit(
-            VotersListSuccess(
-              voters: List.from(_allVoters),
-              houseWise: grouped,
-            ),
-          );
-        }
-      } catch (e) {
-        emit(VotersListFailure(msg: "Failed to replace voter: $e"));
-      }
-    });
-  }
-
-  Map<String, List<VoterDetails>> _groupByHouse(List<VoterDetails> voters) {
-    final Map<String, List<VoterDetails>> grouped = {};
-
-    for (var voter in voters) {
-      final house =
-          voter.houseName.trim().isEmpty ? "Unknown House" : voter.houseName;
-      grouped.putIfAbsent(house, () => []);
-      grouped[house]!.add(voter);
-    }
-
-    // Optional: sort each house’s voters by serial number
-    for (var list in grouped.values) {
-      list.sort((a, b) => a.serialNo.compareTo(b.serialNo));
-    }
-
-    return grouped;
   }
 }

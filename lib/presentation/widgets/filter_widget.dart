@@ -1,6 +1,7 @@
 import 'package:election_mantra/api/models/filter_model.dart';
+import 'package:election_mantra/core/constant/palette.dart';
 import 'package:election_mantra/core/util.dart';
-import 'package:election_mantra/presentation/blocs/age_group_stats_count/age_group_stats_bloc.dart';
+import 'package:election_mantra/presentation/blocs/age_group_stats/age_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/party_list/party_list_bloc.dart';
 import 'package:election_mantra/presentation/blocs/religion/religion_bloc.dart';
 import 'package:election_mantra/presentation/blocs/startup/startup_bloc.dart';
@@ -24,12 +25,6 @@ class _FilterWidgetState extends State<FilterWidget> {
   void initState() {
     super.initState();
     _currentFilters = context.read<FilterCubit>().state;
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<PartyListBloc>().add(FetchPartyListEvent());
-      context.read<ReligionBloc>().add(FetchReligionEvent());
-      context.read<AgeGroupStatsBloc>().add(FetchAgeGroupStatsEvent());
-    });
   }
 
   @override
@@ -47,11 +42,52 @@ class _FilterWidgetState extends State<FilterWidget> {
   /// ---------------- FILTER MODE ----------------
   Widget _buildFilterMode() {
     return Scaffold(
+      bottomNavigationBar: SafeArea(
+        child: Container(
+          padding: EdgeInsets.all(5),
+          color: Colors.grey[200],
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: _clearAllFilters,
+                child: const Text(
+                  'Clear All',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              SizedBox(width: 20),
+              ElevatedButton(
+                onPressed: _applyFilters,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Apply Filters'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      appBar: AppBar(
+        leading: SizedBox.shrink(),
+        leadingWidth: 1,
+        title: Text("Filters"),
+        actions: [
+          IconButton(onPressed: (){
+            Navigator.pop(context);
+          }, icon: Icon(Icons.close))
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           // 🔑 Added scroll
-          padding: const EdgeInsets.all(16),
           child: Container(
+            padding: EdgeInsets.all(15),
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -64,28 +100,11 @@ class _FilterWidgetState extends State<FilterWidget> {
               ],
             ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Filters',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blueAccent,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 20),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-
+               
+                
                 _buildStatusFilter(),
                 const SizedBox(height: 20),
 
@@ -100,28 +119,6 @@ class _FilterWidgetState extends State<FilterWidget> {
 
                 _buildReligionFilter(),
                 const SizedBox(height: 24),
-
-                // Action Buttons
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    TextButton(
-                      onPressed: _clearAllFilters,
-                      child: const Text(
-                        'Clear All',
-                        style: TextStyle(color: Colors.red),
-                      ),
-                    ),
-                    ElevatedButton(
-                      onPressed: _applyFilters,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: const Text('Apply Filters'),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -173,7 +170,7 @@ class _FilterWidgetState extends State<FilterWidget> {
                 }).toList(),
           );
         }
-        return const SizedBox(height: 50, child: LinearProgressIndicator());
+        return  SizedBox(height: 50, child: Util.shimmerBox(height: 5));
       },
     );
   }
@@ -271,7 +268,7 @@ class _FilterWidgetState extends State<FilterWidget> {
                 }).toList(),
           );
         }
-        return const SizedBox(height: 50, child: LinearProgressIndicator());
+        return  SizedBox(height: 50, child: Util.shimmerBox(height: 5));
       },
     );
   }

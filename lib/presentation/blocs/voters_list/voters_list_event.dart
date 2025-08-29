@@ -17,13 +17,6 @@ class SearchVoterListEvent extends VotersListEvent {
   });
 }
 
-class SearchHouseListEvent extends VotersListEvent {
-  final String? searchTerm;
-  SearchHouseListEvent({
-    required this.searchTerm,
-  });
-}
-
 class FetchVoterListByFilterEventNetwork extends VotersListEvent {
   final int? boothId;
   final int? wardId;

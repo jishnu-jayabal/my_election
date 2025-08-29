@@ -312,7 +312,7 @@ class FirebaseUserService implements UserRepository {
 
   //Get Party Count By Voter Preference regardless whether they have voted or not
   @override
-  Future<Map<String, PartyCensusStats>> getPartySupportCount({
+  Future<PartyCensusStats> getPartySupportCount({
     int? boothId,
     int? wardId,
     int? constituencyId,
@@ -329,37 +329,64 @@ class FirebaseUserService implements UserRepository {
       query = query.where('assembly', isEqualTo: constituencyId);
     }
 
-    // Get total voters count
+    // Get total count
     final totalSnap = await query.count().get();
     final total = totalSnap.count;
 
-    if (total == 0) return {};
+    if (total == 0) return PartyCensusStats(total: {}, voted: {}, notVoted: {});
 
-    // Get grouped party counts
-    final partyCounts = <String, int>{};
 
-    final snap = await query.get();
-    for (var doc in snap.docs) {
-      final data = doc.data();
-      final party =
-          (data['party'] ?? "").toString().isNotEmpty
-              ? data['party']
-              : "Undecided";
+    final allParties = await getPoliticalGroups();
 
-      partyCounts[party] = (partyCounts[party] ?? 0) + 1;
+    final totalMap = <String, PartyCountDetail>{};
+    final votedMap = <String, PartyCountDetail>{};
+    final notVotedMap = <String, PartyCountDetail>{};
+
+    // Count for each party using Firebase queries
+    for (final party in allParties) {
+      // Total count for this party
+      final partyQuery = query.where('party', isEqualTo: party.name);
+      final partySnap = await partyQuery.count().get();
+      final partyTotal = partySnap.count;
+
+      // Voted count for this party
+      final votedQuery = partyQuery.where('voted', isEqualTo: true);
+      final votedSnap = await votedQuery.count().get();
+      final partyVoted = votedSnap.count;
+
+      // Not voted count for this party
+      final notVotedQuery = partyQuery.where('voted', isEqualTo: false);
+      final notVotedSnap = await notVotedQuery.count().get();
+      final partyNotVoted = notVotedSnap.count;
+
+      // Add to results as PartyCountDetail objects
+      totalMap[party.name] = PartyCountDetail(
+        party: party.name,
+        count: partyTotal!,
+        percentage: (partyTotal / total!) * 100,
+        color: party.color,
+      );
+
+      votedMap[party.name] = PartyCountDetail(
+        party: party.name,
+        count: partyVoted!,
+        percentage: (partyVoted / total!) * 100,
+        color: party.color,
+      );
+
+      notVotedMap[party.name] = PartyCountDetail(
+        party: party.name,
+        count: partyNotVoted!,
+        percentage: (partyNotVoted / total) * 100,
+        color: party.color,
+      );
     }
 
-    // Convert to map where party name is the key
-    final result = <String, PartyCensusStats>{};
-    partyCounts.forEach((party, count) {
-      result[party] = PartyCensusStats(
-        party: party,
-        count: count,
-        percentage: (count / total!) * 100,
-      );
-    });
-
-    return result;
+    return PartyCensusStats(
+      total: totalMap,
+      voted: votedMap,
+      notVoted: notVotedMap,
+    );
   }
 
   /// Get voters census statistics (total, completed, pending)
@@ -401,67 +428,63 @@ class FirebaseUserService implements UserRepository {
     );
   }
 
-  //Get Age Count 18-25 , 26-40 etc
   @override
   Future<List<AgeGroupStats>> getAgeGroupStatsCount({
     int? boothId,
     int? wardId,
     int? constituencyId,
   }) async {
-    Query baseQuery = _firestore.collection('records');
+    CollectionReference records = _firestore.collection("records");
 
+    Query baseQuery = records;
     if (boothId != null) {
-      baseQuery = baseQuery.where('bhag_no', isEqualTo: boothId);
+      baseQuery = baseQuery.where("bhag_no", isEqualTo: boothId);
     }
     if (constituencyId != null) {
-      baseQuery = baseQuery.where('assembly', isEqualTo: constituencyId);
+      baseQuery = baseQuery.where("assembly", isEqualTo: constituencyId);
     }
 
-    // Get counts for mutually exclusive ranges
-    final results = await Future.wait([
-      // 18-25 (exactly this range)
+    final queries = await Future.wait([
       baseQuery
           .where("age", isGreaterThanOrEqualTo: 18)
           .where("age", isLessThanOrEqualTo: 25)
           .count()
           .get(),
-
-      // 26-40 (exactly this range)
       baseQuery
           .where("age", isGreaterThanOrEqualTo: 26)
           .where("age", isLessThanOrEqualTo: 40)
           .count()
           .get(),
-
-      // 41-60 (exactly this range)
       baseQuery
           .where("age", isGreaterThanOrEqualTo: 41)
           .where("age", isLessThanOrEqualTo: 60)
           .count()
           .get(),
-
-      // 61+ (only greater than 60)
-      baseQuery.where("age", isGreaterThan: 60).count().get(),
-
-      // Unknown (null ages)
-      baseQuery.where("age", isNull: true).count().get(),
-
-      // Under 18 (if any exist)
+      baseQuery.where("age", isGreaterThanOrEqualTo: 61).count().get(),
       baseQuery.where("age", isLessThan: 18).count().get(),
     ]);
 
-    final g18to25 = results[0].count;
-    final g26to40 = results[1].count;
-    final g41to60 = results[2].count;
-    final g61plus = results[3].count;
-    final unknown = results[4].count;
-    final under18 = results[5].count;
+    int g18to25 = queries[0].count ?? 0;
+    int g26to40 = queries[1].count ?? 0;
+    int g41to60 = queries[2].count ?? 0;
+    int g61plus = queries[3].count ?? 0;
+    int under18 = queries[4].count ?? 0;
 
-    // Calculate total from individual counts
-    final total =
-        g18to25! + g26to40! + g41to60! + g61plus! + unknown! + under18!;
+    int total = g18to25 + g26to40 + g41to60 + g61plus + under18;
 
-    List<AgeGroupStats> stats = [
+    List<AgeGroupStats> stats = [];
+
+    if (under18 > 0) {
+      stats.add(
+        AgeGroupStats(
+          label: "Under 18",
+          count: under18,
+          percentage: total > 0 ? (under18 / total) * 100 : 0,
+        ),
+      );
+    }
+
+    stats.addAll([
       AgeGroupStats(
         label: "18-25",
         count: g18to25,
@@ -482,38 +505,20 @@ class FirebaseUserService implements UserRepository {
         count: g61plus,
         percentage: total > 0 ? (g61plus / total) * 100 : 0,
       ),
-      AgeGroupStats(
-        label: "Unknown",
-        count: unknown,
-        percentage: total > 0 ? (unknown / total) * 100 : 0,
-      ),
-    ];
-
-    // Optional: Include under 18 if needed
-    if (under18 > 0) {
-      stats.insert(
-        0,
-        AgeGroupStats(
-          label: "Under 18",
-          count: under18,
-          percentage: total > 0 ? (under18 / total) * 100 : 0,
-        ),
-      );
-    }
+    ]);
 
     return stats;
   }
 
-  //Get Religion Count of voters
   @override
   Future<List<ReligionGroupStats>> getReligionGroupStatsCount({
     int? boothId,
     int? wardId,
     int? constituencyId,
   }) async {
-    final votersRef = _firestore.collection("records");
+    CollectionReference records = _firestore.collection("records");
 
-    Query baseQuery = votersRef;
+    Query baseQuery = records;
     if (boothId != null) {
       baseQuery = baseQuery.where("bhag_no", isEqualTo: boothId);
     }
@@ -521,23 +526,22 @@ class FirebaseUserService implements UserRepository {
       baseQuery = baseQuery.where("assembly", isEqualTo: constituencyId);
     }
 
-    // Get total voters count
+    // Total voters count
     final totalSnap = await baseQuery.count().get();
     final total = totalSnap.count ?? 0;
 
-    // Get configured religions (already includes Other & Unidentified)
-    final religions = await getReligions(); // List<Religion>
+    // Example: Fetch religions from config
+    final religions =
+        await getReligions(); // assume List<Religion> with {name, value, color}
 
     List<ReligionGroupStats> result = [];
-
     int knownTotal = 0;
     Religion? otherReligion;
 
     for (var religion in religions) {
       if (religion.value == "other") {
         otherReligion = religion;
-        // skip "other" for now, we'll compute it later
-        continue;
+        continue; // skip now
       }
 
       final snap =
@@ -545,32 +549,27 @@ class FirebaseUserService implements UserRepository {
               .where("religion", isEqualTo: religion.value)
               .count()
               .get();
-
       final count = snap.count ?? 0;
       knownTotal += count;
-
-      final percentage = total > 0 ? (count / total) * 100 : 0.0;
 
       result.add(
         ReligionGroupStats(
           label: religion.name,
           count: count,
           color: religion.color,
-          percentage: double.parse(percentage.toStringAsFixed(2)),
+          percentage: total > 0 ? (count / total) * 100 : 0,
         ),
       );
     }
 
-    // Now calculate "Other"
+    // Add "Other"
     final otherCount = total - knownTotal;
-    final otherPercentage = total > 0 ? (otherCount / total) * 100 : 0.0;
-
     result.add(
       ReligionGroupStats(
         label: "Other",
         count: otherCount,
-        color: otherReligion != null ? otherReligion.color : "#fffffff",
-        percentage: double.parse(otherPercentage.toStringAsFixed(2)),
+        color: otherReligion?.color ?? "#ffffff",
+        percentage: total > 0 ? (otherCount / total) * 100 : 0,
       ),
     );
 

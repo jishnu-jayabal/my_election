@@ -10,9 +10,7 @@ part 'age_group_stats_state.dart';
 class AgeGroupStatsBloc extends Bloc<AgeGroupStatsEvent, AgeGroupStatsState> {
       final ApiBridge _apiBridge = GetIt.I<ApiBridge>();
   AgeGroupStatsBloc() : super(AgeGroupStatsInitial()) {
-    on<AgeGroupStatsEvent>((event, emit) {
-      // TODO: implement event handler
-    });
+    
      on<FetchAgeGroupStatsEvent>((event,emit) async{
       try {
         emit(AgeGroupStatsLoading());
