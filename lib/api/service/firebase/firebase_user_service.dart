@@ -103,6 +103,7 @@ class FirebaseUserService implements UserRepository {
     return User(
       id: uid!,
       name: data['name'] as String,
+      location_name: data['location_name'] as String,
       boothNo: data['bhag_no'],
       constituencyNo: data['constituency_no'],
       wardNo: data['ward_no'],

@@ -13,9 +13,10 @@ import 'package:election_mantra/presentation/blocs/update_voter/update_voter_blo
 import 'package:election_mantra/presentation/blocs/voters_list/voters_list_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_stats_count/voters_stats_bloc.dart';
 import 'package:election_mantra/presentation/cubit/cubit/filter_cubit.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:get/get_navigation/src/root/get_material_app.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hydrated_bloc/hydrated_bloc.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:path_provider/path_provider.dart';
@@ -25,7 +26,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
     await Firebase.initializeApp();
-    FirebaseAuth.instance.setSettings(appVerificationDisabledForTesting: true);
   } catch (e) {
     print("Firebase initialization error: $e");
   }
@@ -58,11 +58,12 @@ class MyApp extends StatelessWidget {
       BlocProvider<FilterCubit>(create: (context) => FilterCubit()),
       BlocProvider<DownloadExcelPdBloc>(create: (context) => DownloadExcelPdBloc()),
       ],
-      child: MaterialApp(
+      child: GetMaterialApp(
         title: 'Election Mantra',
         theme: ThemeData(
-          primarySwatch: Colors.blue,
-          visualDensity: VisualDensity.adaptivePlatformDensity,
+          textTheme: GoogleFonts.poppinsTextTheme(  // 👈 Apply Google Font
+            Theme.of(context).textTheme,
+          ),
         ),
         initialRoute: AppRoutes.splash,
         onGenerateRoute: AppRoutes.generateRoute,

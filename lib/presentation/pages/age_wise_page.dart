@@ -1,4 +1,5 @@
 import 'package:election_mantra/core/constant/palette.dart';
+import 'package:election_mantra/core/util.dart';
 import 'package:election_mantra/presentation/blocs/age_group_stats/age_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_stats_count/voters_stats_bloc.dart';
 import 'package:election_mantra/presentation/widgets/age_group_stats_widget.dart';
@@ -10,160 +11,214 @@ class AgeWisePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<VotersStatsBloc, VotersStatsState>(
-      builder: (context, voterStatsState) {
-        if (voterStatsState is VotersStatsSuccess) {
+    return Scaffold(
+      body: BlocBuilder<VotersStatsBloc, VotersStatsState>(
+        builder: (context, voterStatsState) {
           return BlocBuilder<AgeGroupStatsBloc, AgeGroupStatsState>(
             builder: (context, ageGroupStatsState) {
-              if (ageGroupStatsState is AgeGroupStatsSuccess) {
-                final totalVoters = voterStatsState.voterCensusStats.totalVoters;
-                final averageVotersPerGroup = totalVoters > 0 && ageGroupStatsState.ageGroupStats.isNotEmpty
-                    ? totalVoters ~/ ageGroupStatsState.ageGroupStats.length
-                    : 0;
-                
-                // Get smallest group (show "Unknown" if count is 0)
-                final smallestGroup = _getSmallestGroup(ageGroupStatsState);
-                
-                return Scaffold(
-                  body: CustomScrollView(
-                    slivers: [
-                      
-                      // Enhanced App Bar with more information
-                      SliverAppBar(
-                        expandedHeight: 240, // Increased height for more content
-                        floating: false,
-                        pinned: true,
-                        flexibleSpace: FlexibleSpaceBar(
-                        
-                          background: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [Palette.primary , Palette.primary.withAlpha(100)],
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 20),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  // Main total voters count
-                                  Text(
-                                    "Total Voters",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white.withOpacity(0.9),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    totalVoters.toString(),
-                                    style: TextStyle(
-                                      fontSize: 42,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      shadows: [
-                                        Shadow(color: Colors.black.withOpacity(0.5), blurRadius: 6, offset: const Offset(0, 2)),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  
-                                  // Stats row
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                                      children: [
-                                        _buildHeaderStat(
-                                          "${ageGroupStatsState.ageGroupStats.length}",
-                                          "Groups",
-                                          Icons.category,
-                                        ),
-                                        _buildHeaderStat(
-                                          averageVotersPerGroup.toString(),
-                                          "Avg/Group",
-                                          Icons.bar_chart,
-                                        ),
-                                        _buildHeaderStat(
-                                          _getLargestGroupCount(ageGroupStatsState).toString(),
-                                          "Max",
-                                          Icons.arrow_upward,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+              if (voterStatsState is! VotersStatsSuccess ||
+                  ageGroupStatsState is! AgeGroupStatsSuccess) {
+                return Util.shimmerBox();
+              }
+
+              final totalVoters = voterStatsState.voterCensusStats.totalVoters;
+              final averageVotersPerGroup =
+                  totalVoters > 0 && ageGroupStatsState.ageGroupStats.isNotEmpty
+                      ? totalVoters ~/ ageGroupStatsState.ageGroupStats.length
+                      : 0;
+              final smallestGroup = _getSmallestGroup(ageGroupStatsState);
+
+              return CustomScrollView(
+                slivers: [
+                  // SliverAppBar
+                  SliverAppBar(
+                    iconTheme: const IconThemeData(color: Colors.white),
+                    expandedHeight: 240,
+                    pinned: true,
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Palette.primary,
+                              Palette.primary.withAlpha(100),
+                            ],
                           ),
                         ),
-                        actions: [
-                          IconButton(
-                            icon: const Icon(Icons.info_outline, color: Colors.white),
-                            onPressed: () {
-                              _showAgeStatsInfo(context, ageGroupStatsState, totalVoters);
-                            },
-                          ),
-                        ],
-                      ),
-
-                      // Summary cards with key metrics
-                      SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                          padding: const EdgeInsets.only(bottom: 20),
                           child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // Quick stats row
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildSummaryCard(
-                                      context,
-                                      "Largest Group",
-                                      _getLargestGroup(ageGroupStatsState),
-                                      Icons.arrow_upward,
-                                      Colors.green,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _buildSummaryCard(
-                                      context,
-                                      "Smallest Group",
-                                      smallestGroup,
-                                      Icons.arrow_downward,
-                                      Colors.blue,
-                                    ),
-                                  ),
-                                ],
+                              const Text(
+                                "Total Voters",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white70,
+                                ),
                               ),
-                              const SizedBox(height: 12),
-                              // Average voters card
-                              _buildSummaryCard(
-                                context,
-                                "Average per Group",
-                                "$averageVotersPerGroup voters",
-                                Icons.bar_chart,
-                                Colors.orange,
-                                fullWidth: true,
+                              const SizedBox(height: 4),
+                              Text(
+                                totalVoters.toString(),
+                                style: TextStyle(
+                                  fontSize: 42,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black54,
+                                      blurRadius: 6,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _buildHeaderStat(
+                                      "${ageGroupStatsState.ageGroupStats.length}",
+                                      "Groups",
+                                      Icons.category,
+                                    ),
+                                    _buildHeaderStat(
+                                      averageVotersPerGroup.toString(),
+                                      "Avg/Group",
+                                      Icons.bar_chart,
+                                    ),
+                                    _buildHeaderStat(
+                                      _getLargestGroupCount(
+                                        ageGroupStatsState,
+                                      ).toString(),
+                                      "Max",
+                                      Icons.arrow_upward,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ),
+                    ),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.info_outline,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          _showAgeStatsInfo(
+                            context,
+                            ageGroupStatsState,
+                            totalVoters,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
 
-                      // Age group visualization header
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 24, top: 8, bottom: 8),
-                          child: Row(
+                  // Summary cards
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          Row(
                             children: [
-                              Icon(Icons.auto_graph, color: Colors.blueAccent, size: 20),
-                              const SizedBox(width: 8),
-                              const Text(
-                                "Visual Distribution",
+                              Expanded(
+                                child: _buildSummaryCard(
+                                  context,
+                                  "Largest Group",
+                                  _getLargestGroup(ageGroupStatsState),
+                                  Icons.arrow_upward,
+                                  Colors.green,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildSummaryCard(
+                                  context,
+                                  "Smallest Group",
+                                  smallestGroup,
+                                  Icons.arrow_downward,
+                                  Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _buildSummaryCard(
+                            context,
+                            "Average per Group",
+                            "$averageVotersPerGroup voters",
+                            Icons.bar_chart,
+                            Colors.orange,
+                            fullWidth: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Chart
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 24,
+                        top: 8,
+                        bottom: 8,
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(
+                            Icons.auto_graph,
+                            color: Colors.blueAccent,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            "Visual Distribution",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blueAccent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const AgeGroupStatsWidget(),
+
+                  // Breakdown header
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: const [
+                              Icon(
+                                Icons.list,
+                                color: Colors.blueAccent,
+                                size: 20,
+                              ),
+                              SizedBox(width: 8),
+                              Text(
+                                "Detailed Breakdown",
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
@@ -172,74 +227,41 @@ class AgeWisePage extends StatelessWidget {
                               ),
                             ],
                           ),
-                        ),
-                      ),
-                      
-                      // AgeGroupStatsWidget
-                      const AgeGroupStatsWidget(),
-                      
-                      // Detailed list header
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.only(left: 24, top: 24, right: 24, bottom: 12),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Icons.list, color: Colors.blueAccent, size: 20),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    "Detailed Breakdown",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.blueAccent,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Chip(
-                                label: Text("Total: $totalVoters"),
-                                backgroundColor: Colors.blueAccent.withOpacity(0.1),
-                                labelStyle: const TextStyle(
-                                  color: Colors.blueAccent,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
+                          Chip(
+                            label: Text("Total: $totalVoters"),
+                            backgroundColor: Colors.blueAccent.withOpacity(0.1),
+                            labelStyle: const TextStyle(
+                              color: Colors.blueAccent,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
+                        ],
                       ),
-
-                      // Enhanced list of age groups
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate(
-                          (context, index) {
-                            final ageGroup = ageGroupStatsState.ageGroupStats.toList()[index];
-                            final percentage = (ageGroup.count / totalVoters * 100);
-                            
-                            return _buildAgeGroupItem(
-                              context,
-                              ageGroup.label,
-                              ageGroup.count,
-                              percentage,
-                              index,
-                            );
-                          }, 
-                          childCount: ageGroupStatsState.ageGroupStats.length,
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                );
-              }
-              return const Center(child: CircularProgressIndicator());
+
+                  // List of age groups
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final ageGroup =
+                          ageGroupStatsState.ageGroupStats.toList()[index];
+                      final percentage = (ageGroup.count / totalVoters * 100);
+
+                      return _buildAgeGroupItem(
+                        context,
+                        ageGroup.label,
+                        ageGroup.count,
+                        percentage,
+                        index,
+                      );
+                    }, childCount: ageGroupStatsState.ageGroupStats.length),
+                  ),
+                ],
+              );
             },
           );
-        }
-        return const Center(child: CircularProgressIndicator());
-      },
+        },
+      ),
     );
   }
 
@@ -259,17 +281,21 @@ class AgeWisePage extends StatelessWidget {
         ),
         Text(
           label,
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.white.withOpacity(0.8),
-          ),
+          style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.8)),
         ),
       ],
     );
   }
 
   // Helper method to build summary cards
-  Widget _buildSummaryCard(BuildContext context, String title, String value, IconData icon, Color color, {bool fullWidth = false}) {
+  Widget _buildSummaryCard(
+    BuildContext context,
+    String title,
+    String value,
+    IconData icon,
+    Color color, {
+    bool fullWidth = false,
+  }) {
     return Card(
       elevation: 3,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -318,7 +344,13 @@ class AgeWisePage extends StatelessWidget {
   }
 
   // Helper method to build age group list items
-  Widget _buildAgeGroupItem(BuildContext context, String label, int count, double percentage, int index) {
+  Widget _buildAgeGroupItem(
+    BuildContext context,
+    String label,
+    int count,
+    double percentage,
+    int index,
+  ) {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -400,7 +432,7 @@ class AgeWisePage extends StatelessWidget {
   // Helper to get the largest age group
   String _getLargestGroup(AgeGroupStatsSuccess state) {
     if (state.ageGroupStats.isEmpty) return "N/A";
-    
+
     final largest = state.ageGroupStats.reduce(
       (a, b) => a.count > b.count ? a : b,
     );
@@ -410,7 +442,7 @@ class AgeWisePage extends StatelessWidget {
   // Helper to get the count of the largest group
   int _getLargestGroupCount(AgeGroupStatsSuccess state) {
     if (state.ageGroupStats.isEmpty) return 0;
-    
+
     final largest = state.ageGroupStats.reduce(
       (a, b) => a.count > b.count ? a : b,
     );
@@ -420,58 +452,71 @@ class AgeWisePage extends StatelessWidget {
   // Helper to get the smallest age group - returns "Unknown" if count is 0
   String _getSmallestGroup(AgeGroupStatsSuccess state) {
     if (state.ageGroupStats.isEmpty) return "Unknown";
-    
+
     // Filter out groups with 0 count
-    final nonZeroGroups = state.ageGroupStats.where((group) => group.count > 0).toList();
-    
+    final nonZeroGroups =
+        state.ageGroupStats.where((group) => group.count > 0).toList();
+
     if (nonZeroGroups.isEmpty) return "Unknown";
-    
-    final smallest = nonZeroGroups.reduce(
-      (a, b) => a.count < b.count ? a : b,
-    );
+
+    final smallest = nonZeroGroups.reduce((a, b) => a.count < b.count ? a : b);
     return "${smallest.label} (${smallest.count})";
   }
 
   // Show detailed information dialog
-  void _showAgeStatsInfo(BuildContext context, AgeGroupStatsSuccess state, int totalVoters) {
+  void _showAgeStatsInfo(
+    BuildContext context,
+    AgeGroupStatsSuccess state,
+    int totalVoters,
+  ) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("Age Distribution Statistics"),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              _buildStatRow("Total Voters", totalVoters.toString()),
-              _buildStatRow("Age Groups", state.ageGroupStats.length.toString()),
-              _buildStatRow("Largest Group", _getLargestGroup(state)),
-              _buildStatRow("Smallest Group", _getSmallestGroup(state)),
-              const SizedBox(height: 16),
-              const Text(
-                "Distribution:",
-                style: TextStyle(fontWeight: FontWeight.bold),
+      builder:
+          (context) => AlertDialog(
+            title: const Text("Age Distribution Statistics"),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  _buildStatRow("Total Voters", totalVoters.toString()),
+                  _buildStatRow(
+                    "Age Groups",
+                    state.ageGroupStats.length.toString(),
+                  ),
+                  _buildStatRow("Largest Group", _getLargestGroup(state)),
+                  _buildStatRow("Smallest Group", _getSmallestGroup(state)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    "Distribution:",
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  ...state.ageGroupStats
+                      .map(
+                        (group) => Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text("${group.label} Years:"),
+                              Text(
+                                "${group.count} (${(group.count / totalVoters * 100).toStringAsFixed(1)}%)",
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ],
               ),
-              ...state.ageGroupStats.map((group) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text("${group.label} Years:"),
-                    Text("${group.count} (${(group.count / totalVoters * 100).toStringAsFixed(1)}%)"),
-                  ],
-                ),
-              )).toList(),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Close"),
+              ),
             ],
           ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
-          ),
-        ],
-      ),
     );
   }
 

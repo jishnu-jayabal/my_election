@@ -158,7 +158,8 @@ class PartyCensusStatsWidget extends StatelessWidget {
             value: detail.percentage,
             title: "${detail.party} ${detail.percentage.toStringAsFixed(1)}%",
             color: Util.hexToColor(party.color),
-            radius: 70,
+            radius: 160,
+            
             titleStyle: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -197,7 +198,7 @@ class PartyCensusStatsWidget extends StatelessWidget {
             PieChartData(
               sections: pieSections,
               sectionsSpace: 2,
-              centerSpaceRadius: 80,
+              centerSpaceRadius: 0,
             ),
           ),
         ),

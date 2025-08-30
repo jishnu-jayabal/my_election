@@ -1,6 +1,9 @@
+import 'package:election_mantra/api/models/political_groups.dart';
 import 'package:election_mantra/api/models/voter_details.dart';
 import 'package:election_mantra/app_routes.dart';
+import 'package:election_mantra/core/util.dart';
 import 'package:election_mantra/presentation/blocs/house_list/house_list_bloc.dart';
+import 'package:election_mantra/presentation/blocs/party_list/party_list_bloc.dart';
 import 'package:election_mantra/presentation/blocs/update_voter/update_voter_bloc.dart';
 import 'package:election_mantra/presentation/blocs/voters_list/voters_list_bloc.dart';
 import 'package:election_mantra/presentation/widgets/contact_buttons.dart';
@@ -49,17 +52,18 @@ class VoterCard extends StatelessWidget {
                   radius: 22,
                   backgroundColor: _getPartyColor(
                     voterDetails.party,
+                    context,
                   ).withOpacity(0.15),
                   child: Text(
                     voterDetails.serialNo.toString(),
                     style: TextStyle(
-                      color: _getPartyColor(voterDetails.party),
+                      color: _getPartyColor(voterDetails.party, context),
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
-            
+
                 // Main voter info
                 Expanded(
                   child: Column(
@@ -76,7 +80,11 @@ class VoterCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Icon(Icons.home, size: 14, color: Colors.grey.shade600),
+                          Icon(
+                            Icons.home,
+                            size: 14,
+                            color: Colors.grey.shade600,
+                          ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
@@ -93,7 +101,10 @@ class VoterCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         "Age: ${voterDetails.age}, ${voterDetails.gender}",
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                        ),
                       ),
                       Text(
                         "ID: ${voterDetails.voterId}",
@@ -106,7 +117,7 @@ class VoterCard extends StatelessWidget {
                     ],
                   ),
                 ),
-            
+
                 // Party + vote status
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
@@ -117,7 +128,10 @@ class VoterCard extends StatelessWidget {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: _getPartyColor(voterDetails.party).withOpacity(0.1),
+                        color: _getPartyColor(
+                          voterDetails.party,
+                          context,
+                        ).withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -125,12 +139,12 @@ class VoterCard extends StatelessWidget {
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 12,
-                          color: _getPartyColor(voterDetails.party),
+                          color: _getPartyColor(voterDetails.party, context),
                         ),
                       ),
                     ),
                     const SizedBox(height: 6),
-            
+
                     BlocConsumer<UpdateVoterBloc, UpdateVoterState>(
                       listener: (context, state) {
                         if (state is UpdateVoterSuccess) {
@@ -139,7 +153,7 @@ class VoterCard extends StatelessWidget {
                               voterDetails: state.voterUpdated,
                             ),
                           );
-                           BlocProvider.of<HouseListBloc>(context).add(
+                          BlocProvider.of<HouseListBloc>(context).add(
                             UpdateVoterInHouseListEvent(
                               voter: state.voterUpdated,
                             ),
@@ -179,7 +193,9 @@ class VoterCard extends StatelessWidget {
                                 fontSize: 11,
                                 fontWeight: FontWeight.w500,
                                 color:
-                                    voterDetails.voted ? Colors.green : Colors.grey,
+                                    voterDetails.voted
+                                        ? Colors.green
+                                        : Colors.grey,
                               ),
                             ),
                           ],
@@ -190,23 +206,37 @@ class VoterCard extends StatelessWidget {
                 ),
               ],
             ),
-            ContactButtons(voterDetails: voterDetails)
+            ContactButtons(voterDetails: voterDetails),
           ],
         ),
       ),
     );
   }
 
-  Color _getPartyColor(String party) {
-    switch (party.toLowerCase()) {
-      case "udf":
-        return Colors.blue;
-      case "ldf":
-        return Colors.red;
-      case "bjp":
-        return Colors.orange;
-      default:
-        return Colors.grey;
+  Color _getPartyColor(String party, BuildContext context) {
+    final partyListState = BlocProvider.of<PartyListBloc>(context).state;
+
+    if (partyListState is PartyListSuccess) {
+      // Search for the party by name or abbreviation (case insensitive)
+      final match = partyListState.politicalGroups.firstWhere(
+        (p) =>
+            p.name.toLowerCase() == party.toLowerCase() ||
+            p.abbreviation.toLowerCase() == party.toLowerCase(),
+        orElse:
+            () => PoliticalGroups(
+              id: -1,
+              name: "Unknown",
+              symbol: "",
+              abbreviation: "",
+              color: "#999999", // default gray color
+            ),
+      );
+
+      // Convert hex string to Color
+      return Util.hexToColor(match.color);
     }
+
+    // Default color if party list is not loaded
+    return Colors.grey;
   }
 }

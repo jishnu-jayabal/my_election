@@ -96,13 +96,12 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
       appBar: AppBar(
         foregroundColor: Palette.textPrimary,
         backgroundColor: Palette.primary,
-        title:  Text('Edit Voter Record',
-        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
-
-          color: Palette.textPrimary
+        title: Text(
+          'Edit Voter Record',
+          style: Theme.of(
+            context,
+          ).textTheme.bodyLarge!.copyWith(color: Palette.textPrimary),
         ),
-        ),
-      
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -142,7 +141,11 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
           children: [
             const Text(
               'Basic Information',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Palette.primary,
+              ),
             ),
             const SizedBox(height: 16),
             Row(
@@ -188,7 +191,11 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
           children: [
             const Text(
               'Voter Information ★',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Palette.primary,
+              ),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -273,7 +280,10 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
           children: [
             const Text(
               'Cultural Information',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
+              color: Palette.primary
+              ),
+
             ),
             const SizedBox(height: 25),
             const Text(
@@ -398,7 +408,10 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
           children: [
             const Text(
               'Professional Information',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
+              color: Palette.primary
+              ),
+
             ),
             const SizedBox(height: 25),
             const Text(
@@ -522,7 +535,10 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
                 children: [
                   const Text(
                     'Residence Information',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
+              color: Palette.primary
+              ),
+
                   ),
                   const SizedBox(height: 20),
                   const Text(
@@ -673,9 +689,7 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
 
     return ChoiceChip(
       checkmarkColor: Palette.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10.0),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
       label: Text(
         party,
         overflow: TextOverflow.ellipsis,
@@ -693,7 +707,7 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
           });
         }
       },
-      labelPadding: const EdgeInsets.symmetric(horizontal: 5,vertical: 4),
+      labelPadding: const EdgeInsets.symmetric(horizontal: 5, vertical: 4),
     );
   }
 
@@ -940,7 +954,7 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
         return ElevatedButton(
           onPressed: _saveVoterDetails,
           style: ElevatedButton.styleFrom(
-            backgroundColor: Palette.accentTeal,
+            backgroundColor: Palette.primary,
             padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
           ),
           child: const Text(

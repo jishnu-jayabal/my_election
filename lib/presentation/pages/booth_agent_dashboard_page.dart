@@ -109,61 +109,72 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
           ).add(FetchHouseListEventLocal(voters: allVoters));
           final loginSuccessState =
               context.read<LoginBloc>().state as LoginSuccessState;
-          final partyListSuccess =
-              context.read<PartyListBloc>().state as PartyListSuccess;
-          final religionSuccess =
-              context.read<ReligionBloc>().state as ReligionSuccess;
+
+          final partyListState = context.read<PartyListBloc>().state;
+          final religionState = context.read<ReligionBloc>().state;
+
+          if (partyListState is PartyListSuccess &&
+              religionState is ReligionSuccess) {
+            context.read<PartyStatsBloc>().add(
+              FetchPartysStatsEventLocal(
+                boothId: loginSuccessState.user.boothNo,
+                allVoters: allVoters,
+                politicalGroups: partyListState.politicalGroups,
+              ),
+            );
+            context.read<ReligionGroupStatsBloc>().add(
+              FetchReligionGroupStatsLocal(
+                boothId: loginSuccessState.user.boothNo,
+                allVoters: allVoters,
+                religions: religionState.religions,
+              ),
+            );
+          } else {
+            //do nothing for now
+          }
+
           context.read<VotersStatsBloc>().add(
             FetchVotersStatsEventLocal(
               boothId: loginSuccessState.user.boothNo,
               allVoters: allVoters,
             ),
           );
-          context.read<PartyStatsBloc>().add(
-            FetchPartysStatsEventLocal(
-              boothId: loginSuccessState.user.boothNo,
-              allVoters: allVoters,
-              politicalGroups: partyListSuccess.politicalGroups,
-            ),
-          );
-          context.read<ReligionGroupStatsBloc>().add(
-            FetchReligionGroupStatsLocal(
-              boothId: loginSuccessState.user.boothNo,
-              allVoters: allVoters,
-              religions: religionSuccess.religions,
-            ),
-          );
 
           return CustomScrollView(
             slivers: [
               // Constituency info below app bar
-              SliverToBoxAdapter(
-                child: Container(
-                  color: Colors.blue[50],
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 8,
-                    horizontal: 16,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.location_on,
-                        size: 14,
-                        color: Colors.blue[700],
+              BlocBuilder<LoginBloc, LoginState>(
+                builder: (context, state) {
+                  return SliverToBoxAdapter(
+                    child: Container(
+                      color: Colors.blue[50],
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 16,
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        constituency,
-                        style: TextStyle(
-                          color: Colors.blue[700],
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                        ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                         state is LoginSuccessState? Icon(
+                            Icons.location_on,
+                            size: 14,
+                            color: Colors.blue[700],
+                          ):SizedBox.shrink(),
+                          const SizedBox(width: 4),
+                          Text(
+                            state is LoginSuccessState?
+                            state.user.location_name:"",
+                            style: TextStyle(
+                              color: Colors.blue[700],
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
 
               // Stats section

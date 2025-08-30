@@ -14,7 +14,9 @@ class ReligionGroupStatsWidget extends StatelessWidget {
         if (state is ReligionGroupStatsSuccess) {
           // Filter out groups with 0 count
           final nonZeroGroups =
-              state.religionGroupStats.where((group) => group.count > 0).toList();
+              state.religionGroupStats
+                  .where((group) => group.count > 0)
+                  .toList();
 
           if (nonZeroGroups.isEmpty) {
             return SliverToBoxAdapter(
@@ -55,8 +57,8 @@ class ReligionGroupStatsWidget extends StatelessWidget {
                     Text(
                       "Religion Distribution",
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
@@ -64,23 +66,43 @@ class ReligionGroupStatsWidget extends StatelessWidget {
                       child: PieChart(
                         PieChartData(
                           sectionsSpace: 2,
-                          centerSpaceRadius: 40,
-                          sections: nonZeroGroups.map((group) {
-                            return PieChartSectionData(
-                              color: Util.hexToColor(group.color), // ✅ Use provided color
-                              value: group.percentage,
-                              title:
-                                  "${group.label}\n${group.percentage.toStringAsFixed(1)}%",
-                              radius: 80,
-                              titleStyle: const TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            );
-                          }).toList(),
+                          centerSpaceRadius: 0,
+                          sections:
+                              nonZeroGroups.map((group) {
+                                return PieChartSectionData(
+                                  color: Util.hexToColor(group.color),
+                                  value: group.percentage ,
+                                  title:group.percentage >2.0? group.label:"", // no inside label
+                                  radius: 130
+                                );
+                              }).toList(),
                         ),
                       ),
+                    ),
+                    SizedBox(height: 15),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 4,
+                      children:
+                          nonZeroGroups.map((group) {
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Util.hexToColor(group.color),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  width: 12,
+                                  height: 12,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "${group.label} (${group.percentage.toStringAsFixed(1)}%)",
+                                ),
+                              ],
+                            );
+                          }).toList(),
                     ),
                     if (nonZeroGroups.length < state.religionGroupStats.length)
                       Padding(
@@ -101,9 +123,7 @@ class ReligionGroupStatsWidget extends StatelessWidget {
           );
         }
 
-        return const SliverToBoxAdapter(
-          child: LinearProgressIndicator(),
-        );
+        return const SliverToBoxAdapter(child: LinearProgressIndicator());
       },
     );
   }

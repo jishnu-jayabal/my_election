@@ -79,9 +79,16 @@ class _FilterWidgetState extends State<FilterWidget> {
       appBar: AppBar(
         leading: const SizedBox.shrink(),
         leadingWidth: 1,
-        title: const Text("Filters"),
+        backgroundColor: Palette.primary,
+        title:  Text("Filters",
+        style: Theme.of(context).textTheme.bodyLarge!.copyWith(
+          color: Palette.white
+          ,fontSize: 20
+        ),
+        ),
         actions: [
           IconButton(
+            color: Palette.white,
             onPressed: () {
               Navigator.pop(context);
             },

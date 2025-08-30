@@ -11,186 +11,239 @@ class ReligionWisePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<VotersStatsBloc, VotersStatsState>(
-      builder: (context, voterStatsState) {
-        if (voterStatsState is VotersStatsSuccess) {
-          final totalVoters = voterStatsState.voterCensusStats.totalVoters;
-
+    return Scaffold(
+      body: BlocBuilder<VotersStatsBloc, VotersStatsState>(
+        builder: (context, voterStatsState) {
           return BlocBuilder<ReligionGroupStatsBloc, ReligionGroupStatsState>(
-            builder: (context, state) {
-              if (state is ReligionGroupStatsSuccess) {
-                final averageVotersPerGroup =
-                    (totalVoters > 0 &&
-                            state.religionGroupStats.isNotEmpty &&
-                            state.religionGroupStats.any((g) => g.count > 0))
-                        ? totalVoters ~/ state.religionGroupStats.length
-                        : 0;
+            builder: (context, religionState) {
+              if (voterStatsState is! VotersStatsSuccess) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                final smallestGroup = _getSmallestGroup(state);
+              if (religionState is ReligionGroupStatsLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-                return Scaffold(
-                  body: CustomScrollView(
-                    slivers: [
-                      // Enhanced App Bar
-                      SliverAppBar(
-                        expandedHeight: 240,
-                        floating: false,
-                        pinned: true,
-                        flexibleSpace: FlexibleSpaceBar(
-                          background: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  Palette.primary,
-                                  Palette.primary.withAlpha(100),
-                                ],
-                              ),
-                            ),
-                            child: Padding(
-                              padding: const EdgeInsets.only(bottom: 20),
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    "Total Voters",
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.white.withOpacity(0.9),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    totalVoters.toString(),
-                                    style: TextStyle(
-                                      fontSize: 42,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black.withOpacity(0.5),
-                                          blurRadius: 6,
-                                          offset: const Offset(0, 2),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 20,
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceAround,
-                                      children: [
-                                        _buildHeaderStat(
-                                          "${state.religionGroupStats.length}",
-                                          "Religions",
-                                          Icons.category,
-                                        ),
-                                        _buildHeaderStat(
-                                          averageVotersPerGroup.toString(),
-                                          "Avg/Religion",
-                                          Icons.bar_chart,
-                                        ),
-                                        _buildHeaderStat(
-                                          _getLargestGroupCount(
-                                            state,
-                                          ).toString(),
-                                          "Max",
-                                          Icons.arrow_upward,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+              if (religionState is ReligionGroupStatsFailed) {
+                return Center(
+                  child: Text(
+                    "Failed to load data: ${religionState.msg}",
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                );
+              }
+
+              if (religionState is! ReligionGroupStatsSuccess) {
+                return const SizedBox.shrink();
+              }
+
+              final totalVoters = voterStatsState.voterCensusStats.totalVoters;
+
+              final averageVotersPerGroup =
+                  (totalVoters > 0 &&
+                          religionState.religionGroupStats.isNotEmpty &&
+                          religionState.religionGroupStats.any(
+                            (g) => g.count > 0,
+                          ))
+                      ? totalVoters ~/ religionState.religionGroupStats.length
+                      : 0;
+
+              final smallestGroup = _getSmallestGroup(religionState);
+
+              return CustomScrollView(
+                slivers: [
+                  // --- SliverAppBar ---
+                  SliverAppBar(
+                    iconTheme: const IconThemeData(color: Colors.white),
+                    expandedHeight: 240,
+                    pinned: true,
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Palette.primary,
+                              Palette.primary.withAlpha(100),
+                            ],
                           ),
                         ),
-                        actions: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.info_outline,
-                              color: Colors.white,
-                            ),
-                            onPressed: () {
-                              _showReligionStatsInfo(
-                                context,
-                                state,
-                                totalVoters,
-                              );
-                            },
-                          ),
-                        ],
-                      ),
-
-                      // Summary cards
-                      SliverToBoxAdapter(
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 16,
-                          ),
+                          padding: const EdgeInsets.only(bottom: 20),
                           child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: _buildSummaryCard(
-                                      context,
-                                      "Largest Religion",
-                                      _getLargestGroup(state),
-                                      Icons.arrow_upward,
-                                      Colors.green,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: _buildSummaryCard(
-                                      context,
-                                      "Smallest Religion",
-                                      smallestGroup,
-                                      Icons.arrow_downward,
-                                      Colors.blue,
-                                    ),
-                                  ),
-                                ],
+                              Text(
+                                "Total Voters",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white.withOpacity(0.9),
+                                ),
                               ),
-                              const SizedBox(height: 12),
-                              _buildSummaryCard(
-                                context,
-                                "Average per Religion",
-                                "$averageVotersPerGroup voters",
-                                Icons.bar_chart,
-                                Colors.orange,
-                                fullWidth: true,
+                              const SizedBox(height: 4),
+                              Text(
+                                totalVoters.toString(),
+                                style: TextStyle(
+                                  fontSize: 42,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  shadows: [
+                                    Shadow(
+                                      color: Colors.black.withOpacity(0.5),
+                                      blurRadius: 6,
+                                      offset: Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 20,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceAround,
+                                  children: [
+                                    _buildHeaderStat(
+                                      "${religionState.religionGroupStats.length}",
+                                      "Religions",
+                                      Icons.category,
+                                    ),
+                                    _buildHeaderStat(
+                                      averageVotersPerGroup.toString(),
+                                      "Avg/Religion",
+                                      Icons.bar_chart,
+                                    ),
+                                    _buildHeaderStat(
+                                      _getLargestGroupCount(
+                                        religionState,
+                                      ).toString(),
+                                      "Max",
+                                      Icons.arrow_upward,
+                                    ),
+                                  ],
+                                ),
                               ),
                             ],
                           ),
                         ),
                       ),
+                    ),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(
+                          Icons.info_outline,
+                          color: Colors.white,
+                        ),
+                        onPressed: () {
+                          _showReligionStatsInfo(
+                            context,
+                            religionState,
+                            totalVoters,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
 
-                      // Visual Distribution header
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.only(
-                            left: 24,
-                            top: 8,
-                            bottom: 8,
-                          ),
-                          child: Row(
+                  // --- Summary Cards ---
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
                             children: [
+                              Expanded(
+                                child: _buildSummaryCard(
+                                  context,
+                                  "Largest Religion",
+                                  _getLargestGroup(religionState),
+                                  Icons.arrow_upward,
+                                  Colors.green,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: _buildSummaryCard(
+                                  context,
+                                  "Smallest Religion",
+                                  smallestGroup,
+                                  Icons.arrow_downward,
+                                  Colors.blue,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          _buildSummaryCard(
+                            context,
+                            "Average per Religion",
+                            "$averageVotersPerGroup voters",
+                            Icons.bar_chart,
+                            Colors.orange,
+                            fullWidth: true,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // --- Chart Section ---
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                        left: 24,
+                        top: 8,
+                        bottom: 8,
+                      ),
+                      child: Row(
+                        children: const [
+                          Icon(
+                            Icons.auto_graph,
+                            color: Colors.blueAccent,
+                            size: 20,
+                          ),
+                          SizedBox(width: 8),
+                          Text(
+                            "Visual Distribution",
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.blueAccent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const ReligionGroupStatsWidget(),
+
+                  // --- Breakdown Header ---
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 24,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: const [
                               Icon(
-                                Icons.auto_graph,
+                                Icons.list,
                                 color: Colors.blueAccent,
                                 size: 20,
                               ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                "Visual Distribution",
+                              SizedBox(width: 8),
+                              Text(
+                                "Detailed Breakdown",
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w600,
@@ -199,102 +252,41 @@ class ReligionWisePage extends StatelessWidget {
                               ),
                             ],
                           ),
-                        ),
-                      ),
-
-                      // Distribution Chart
-                      const ReligionGroupStatsWidget(),
-
-                      // Detailed Breakdown header
-                      SliverToBoxAdapter(
-                        child: Padding(
-                          padding: const EdgeInsets.only(
-                            left: 24,
-                            top: 24,
-                            right: 24,
-                            bottom: 12,
+                          Chip(
+                            label: Text("Total: $totalVoters"),
+                            backgroundColor: Colors.blueAccent.withOpacity(0.1),
+                            labelStyle: const TextStyle(
+                              color: Colors.blueAccent,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.list,
-                                    color: Colors.blueAccent,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  const Text(
-                                    "Detailed Breakdown",
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.blueAccent,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Chip(
-                                label: Text("Total: $totalVoters"),
-                                backgroundColor: Colors.blueAccent.withOpacity(
-                                  0.1,
-                                ),
-                                labelStyle: const TextStyle(
-                                  color: Colors.blueAccent,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        ],
                       ),
-
-                      // List of Religions
-                      SliverList(
-                        delegate: SliverChildBuilderDelegate((context, index) {
-                          final religion = state.religionGroupStats[index];
-                          final percentage = religion.percentage;
-
-                          return _buildReligionItem(
-                            context,
-                            religion.label,
-                            religion.count,
-                            percentage,
-                            index,
-                            Util.hexToColor(religion.color),
-                          );
-                        }, childCount: state.religionGroupStats.length),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              if (state is ReligionGroupStatsLoading) {
-                return const Scaffold(
-                  body: Center(child: CircularProgressIndicator()),
-                );
-              }
-
-              if (state is ReligionGroupStatsFailed) {
-                return Scaffold(
-                  body: Center(
-                    child: Text(
-                      "Failed to load data: ${state.msg}",
-                      style: const TextStyle(color: Colors.red),
                     ),
                   ),
-                );
-              }
 
-              return const SizedBox.shrink();
+                  // --- List of Religions ---
+                  SliverList(
+                    delegate: SliverChildBuilderDelegate((context, index) {
+                      final religion = religionState.religionGroupStats[index];
+                      final percentage = religion.percentage;
+
+                      return _buildReligionItem(
+                        context,
+                        religion.label,
+                        religion.count,
+                        percentage,
+                        index,
+                        Util.hexToColor(religion.color),
+                      );
+                    }, childCount: religionState.religionGroupStats.length),
+                  ),
+                ],
+              );
             },
           );
-        }
-
-        return const Scaffold(body: Center(child: CircularProgressIndicator()));
-      },
+        },
+      ),
     );
   }
 
