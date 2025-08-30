@@ -41,31 +41,35 @@ class ContactButtons extends StatelessWidget {
     String phone, {
     String message = '',
   }) async {
-    final stripped = _stripNumber(phone);
-    final withCc =
-        stripped.startsWith(defaultCountryCode)
-            ? stripped
-            : '$defaultCountryCode$stripped';
+    // Ensure proper formatting
+    String n = phone.replaceAll(RegExp(r'[^\d]'), ''); // remove non-digits
+    if (n.startsWith('0')) n = n.substring(1); // remove leading 0
+    if (!n.startsWith('91')) n = '91$n'; // add country code if missing
 
     final whatsappScheme = Uri.parse(
-      'whatsapp://send?phone=$withCc&text=${Uri.encodeComponent(message)}',
+      'whatsapp://send?phone=$n&text=${Uri.encodeComponent(message)}',
     );
     final waMe = Uri.parse(
-      'https://wa.me/$withCc?text=${Uri.encodeComponent(message)}',
+      'https://wa.me/$n?text=${Uri.encodeComponent(message)}',
     );
 
-    if (await canLaunchUrl(whatsappScheme)) {
-      await launchUrl(whatsappScheme, mode: LaunchMode.externalApplication);
-      return;
+    try {
+      if (await canLaunchUrl(whatsappScheme)) {
+        await launchUrl(whatsappScheme, mode: LaunchMode.externalApplication);
+        return;
+      }
+      if (await canLaunchUrl(waMe)) {
+        await launchUrl(waMe, mode: LaunchMode.externalApplication);
+        return;
+      }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Could not open WhatsApp')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error opening WhatsApp: $e')));
     }
-    if (await canLaunchUrl(waMe)) {
-      await launchUrl(waMe, mode: LaunchMode.externalApplication);
-      return;
-    }
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Could not open WhatsApp')));
   }
 
   @override

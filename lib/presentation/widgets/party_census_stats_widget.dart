@@ -83,8 +83,8 @@ class PartyCensusStatsWidget extends StatelessWidget {
     return Chip(
       label: Text("$name: $count"),
       backgroundColor: color.withOpacity(0.15),
-      labelStyle: const TextStyle(
-        color: Colors.black87,
+      labelStyle:  TextStyle(
+        color: Colors.grey[600],
         fontWeight: FontWeight.bold,
         fontSize: 14,
       ),

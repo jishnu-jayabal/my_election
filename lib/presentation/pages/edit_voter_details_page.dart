@@ -12,6 +12,7 @@ import 'package:election_mantra/presentation/blocs/update_voter/update_voter_blo
 import 'package:election_mantra/presentation/blocs/voters_list/voters_list_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class EditVoterDetailsPage extends StatefulWidget {
   final VoterDetails voter;
@@ -139,13 +140,24 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text(
-              'Basic Information',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Palette.primary,
-              ),
+            Row(
+              children: [
+                const Text(
+                  'Basic Information',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Palette.primary,
+                  ),
+                ),
+                  SizedBox(width: 5),
+
+                FaIcon(
+                  FontAwesomeIcons.userCheck,
+                  size: 20,
+                  color: Palette.primary,
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             Row(
@@ -189,13 +201,23 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Voter Information ★',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Palette.primary,
-              ),
+            Row(
+              children: [
+                const Text(
+                  'Voter Information',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Palette.primary,
+                  ),
+                ),
+                SizedBox(width: 5),
+                FaIcon(
+                  FontAwesomeIcons.checkToSlot,
+                  size: 20,
+                  color: Palette.primary,
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             const Text(
@@ -278,12 +300,24 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Cultural Information',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
-              color: Palette.primary
-              ),
+            Row(
+              children: [
+                const Text(
+                  'Cultural Information',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Palette.primary,
+                  ),
+                ),
+                SizedBox(width: 5),
 
+                FaIcon(
+                  FontAwesomeIcons.scroll,
+                  size: 20,
+                  color: Palette.primary,
+                ),
+              ],
             ),
             const SizedBox(height: 25),
             const Text(
@@ -392,6 +426,7 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
                 return Util.shimmerBox(height: 10);
               },
             ),
+            SizedBox(height: 5),
           ],
         ),
       ),
@@ -406,12 +441,24 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Professional Information',
-                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
-              color: Palette.primary
-              ),
+            Row(
+              children: [
+                const Text(
+                  'Professional Information',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Palette.primary,
+                  ),
+                ),
+                SizedBox(width: 5),
 
+                FaIcon(
+                  FontAwesomeIcons.userTie,
+                  size: 20,
+                  color: Palette.primary,
+                ),
+              ],
             ),
             const SizedBox(height: 25),
             const Text(
@@ -516,6 +563,7 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
                 });
               },
             ),
+            SizedBox(height: 5),
           ],
         ),
       ),
@@ -533,12 +581,24 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Residence Information',
-                                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,
-              color: Palette.primary
-              ),
+                  Row(
+                    children: [
+                      const Text(
+                        'Residence Information',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Palette.primary,
+                        ),
+                      ),
+                      SizedBox(width: 5),
 
+                      FaIcon(
+                        FontAwesomeIcons.house,
+                        size: 20,
+                        color: Palette.primary,
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
                   const Text(
@@ -617,7 +677,7 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blueAccent : Colors.grey[200],
+          color: isSelected ? Colors.blueAccent : Colors.white10,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? Colors.blue : Colors.grey,
@@ -650,7 +710,7 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
       child: Container(
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: isSelected ? Colors.blueAccent : Colors.grey[200],
+          color: isSelected ? Colors.blueAccent : Colors.white10,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? Colors.blue : Colors.grey,
@@ -781,6 +841,7 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
           final hasCastes = selectedReligion.castes.isNotEmpty;
 
           return ChoiceChip(
+            checkmarkColor: Palette.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10.0),
             ),
@@ -832,6 +893,7 @@ class _EditVoterDetailsPageState extends State<EditVoterDetailsPage> {
 
   Widget _buildOccupationChip(String occupation) {
     return ChoiceChip(
+      checkmarkColor: Palette.white,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       label: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

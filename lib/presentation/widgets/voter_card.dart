@@ -75,7 +75,9 @@ class VoterCard extends StatelessWidget {
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
                         ),
-                        overflow: TextOverflow.ellipsis,
+                        softWrap: true,
+                        maxLines: 2, // optional, limit to 2 lines
+                        overflow: TextOverflow.visible,
                       ),
                       const SizedBox(height: 2),
                       Row(

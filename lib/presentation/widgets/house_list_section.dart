@@ -87,8 +87,8 @@ class _HouseListSectionState extends State<HouseListSection> {
 
                     return Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 5,
+                        horizontal: 12,
+                        vertical: 3,
                       ),
                       child: Card(
                         color: Palette.white,
@@ -104,6 +104,7 @@ class _HouseListSectionState extends State<HouseListSection> {
                             );
                           },
                           backgroundColor: Palette.white,
+                          childrenPadding: EdgeInsets.only(bottom: 8),
                           tilePadding: const EdgeInsets.symmetric(
                             horizontal: 16,
                             vertical: 12,
@@ -145,7 +146,7 @@ class _HouseListSectionState extends State<HouseListSection> {
                                   .map(
                                     (voter) => Padding(
                                       padding: const EdgeInsets.symmetric(
-                                        vertical: 8,
+                                        vertical: 0,
                                       ),
                                       child: Container(
                                         width:

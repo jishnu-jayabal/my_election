@@ -1,4 +1,5 @@
 import 'package:election_mantra/api/models/filter_model.dart';
+import 'package:election_mantra/core/constant/palette.dart';
 import 'package:election_mantra/core/util.dart';
 import 'package:election_mantra/presentation/blocs/age_group_stats/age_group_stats_bloc.dart';
 import 'package:election_mantra/presentation/blocs/house_list/house_list_bloc.dart';
@@ -19,6 +20,7 @@ import 'package:election_mantra/presentation/widgets/voters_census_stats_widget.
 import 'package:election_mantra/presentation/widgets/voters_list_section.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class BoothAgentDashboard extends StatefulWidget {
   const BoothAgentDashboard({super.key});
@@ -198,12 +200,22 @@ class _BoothAgentDashboardState extends State<BoothAgentDashboard> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
-                        "Party Percentage",
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blueAccent,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            "Quick Stats",
+                            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                              color: Palette.primary
+                            ),
+                          ),
+                          SizedBox(width: 2,),
+                          FaIcon(FontAwesomeIcons.percent,
+                          color: Palette.primary,
+                          size: 16,
+                          )
+                        ],
                       ),
                     ],
                   ),
